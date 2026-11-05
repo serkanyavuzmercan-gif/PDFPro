@@ -1,7 +1,8 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useRef, useState, type MouseEvent } from 'react'
 import { Bookmark, ChevronDown, ChevronRight, LayoutGrid, type LucideIcon } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import type { PDFDocumentProxy } from 'pdfjs-dist'
+import { movePages } from '../../editing/pageOps'
 import { resolveDestinationPage } from '../../services/pdfService'
 import { useAppStore, type OpenDocument, type SidebarPanel } from '../../store/useAppStore'
 import { PageCanvas } from '../viewer/PageCanvas'
@@ -15,8 +16,12 @@ const panels: { id: SidebarPanel; icon: LucideIcon; labelKey: string }[] = [
 
 function Thumbnails({ doc }: { doc: OpenDocument }): JSX.Element {
   const currentPage = useAppStore((s) => s.currentPage)
+  const selectedPages = useAppStore((s) => s.selectedPages)
   const goToPage = useAppStore((s) => s.goToPage)
+  const selectPage = useAppStore((s) => s.selectPage)
   const listRef = useRef<HTMLDivElement>(null)
+  const [dropAt, setDropAt] = useState<number | null>(null)
+  const dragging = useRef<number[]>([])
 
   useEffect(() => {
     listRef.current
@@ -24,32 +29,87 @@ function Thumbnails({ doc }: { doc: OpenDocument }): JSX.Element {
       ?.scrollIntoView({ block: 'nearest' })
   }, [currentPage])
 
+  const onItemClick = (page: number, event: MouseEvent): void => {
+    const mode = event.shiftKey ? 'range' : event.ctrlKey || event.metaKey ? 'toggle' : 'single'
+    selectPage(page, mode)
+    goToPage(page)
+  }
+
+  const dropIndexFromY = (clientY: number): number => {
+    const items = [...(listRef.current?.querySelectorAll<HTMLElement>('[data-thumb]') ?? [])]
+    for (let i = 0; i < items.length; i++) {
+      const rect = items[i].getBoundingClientRect()
+      if (clientY < rect.top + rect.height / 2) return i
+    }
+    return items.length
+  }
+
   return (
-    <div ref={listRef} className="flex flex-col items-center gap-3 p-3">
+    <div
+      ref={listRef}
+      className="relative flex flex-col items-center gap-3 p-3"
+      onDragOver={(e) => {
+        if (dragging.current.length === 0) return
+        e.preventDefault()
+        setDropAt(dropIndexFromY(e.clientY))
+      }}
+      onDrop={(e) => {
+        e.preventDefault()
+        const target = dropIndexFromY(e.clientY)
+        const pages = dragging.current
+        dragging.current = []
+        setDropAt(null)
+        if (pages.length > 0) void movePages(pages, target)
+      }}
+      onDragLeave={(e) => {
+        if (!listRef.current?.contains(e.relatedTarget as Node)) setDropAt(null)
+      }}
+    >
       {doc.pageSizes.map((size, index) => {
         const page = index + 1
-        const selected = page === currentPage
+        const current = page === currentPage
+        const selected = selectedPages.includes(page) || (selectedPages.length === 0 && current)
         return (
-          <button
-            key={page}
-            type="button"
-            data-thumb={page}
-            onClick={() => goToPage(page)}
-            className="flex flex-col items-center gap-1"
-          >
-            <PageCanvas
-              pdf={doc.pdf}
-              pageNumber={page}
-              size={size}
-              scale={THUMB_WIDTH / size.width}
-              className={`outline-offset-2 ${selected ? 'outline-2 outline-brand' : 'outline-1 outline-chrome-border hover:outline-ink-muted'} outline`}
-            />
-            <span className={`text-[11px] ${selected ? 'font-semibold text-brand' : 'text-ink-muted'}`}>
-              {page}
-            </span>
-          </button>
+          <div key={page} className="relative flex w-full flex-col items-center">
+            {dropAt === index && (
+              <div className="absolute -top-2 left-3 right-3 z-10 h-0.5 rounded bg-brand" />
+            )}
+            <button
+              type="button"
+              data-thumb={page}
+              draggable
+              onClick={(e) => onItemClick(page, e)}
+              onDragStart={(e) => {
+                const pages =
+                  selectedPages.includes(page) && selectedPages.length > 0 ? selectedPages : [page]
+                dragging.current = pages
+                e.dataTransfer.effectAllowed = 'move'
+                e.dataTransfer.setData('text/plain', pages.join(','))
+                if (!selectedPages.includes(page)) selectPage(page, 'single')
+              }}
+              onDragEnd={() => {
+                dragging.current = []
+                setDropAt(null)
+              }}
+              className="flex flex-col items-center gap-1"
+            >
+              <PageCanvas
+                pdf={doc.pdf}
+                pageNumber={page}
+                size={size}
+                scale={THUMB_WIDTH / size.width}
+                className={`outline-offset-2 ${selected ? 'outline-2 outline-brand' : 'outline-1 outline-chrome-border hover:outline-ink-muted'} outline`}
+              />
+              <span className={`text-[11px] ${current ? 'font-semibold text-brand' : 'text-ink-muted'}`}>
+                {page}
+              </span>
+            </button>
+          </div>
         )
       })}
+      {dropAt === doc.pageSizes.length && (
+        <div className="h-0.5 w-[calc(100%-1.5rem)] rounded bg-brand" />
+      )}
     </div>
   )
 }

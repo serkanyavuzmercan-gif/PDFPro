@@ -4,13 +4,14 @@
     "about": "PDFPro - Profesyonel PDF Düzenleyici"
   },
   "common": {
-    "comingSoon": "Yakında",
     "language": "Dil",
     "noDocument": "Açık belge yok",
     "openHint": "Başlamak için bir PDF dosyası açın",
     "openButton": "PDF Aç",
     "loading": "Belge yükleniyor...",
     "dismiss": "Kapat",
+    "cancel": "İptal",
+    "close": "Kapat",
     "untitled": "Adsız"
   },
   "ribbon": {
@@ -85,8 +86,66 @@
     "splitPdf": "PDF Böl",
     "drawSignature": "İmza Çiz",
     "imageSignature": "Resim İmza",
+    "deleteObject": "Nesneyi Sil",
+    "movePagesUp": "Sayfaları Yukarı Taşı",
+    "movePagesDown": "Sayfaları Aşağı Taşı",
     "langTr": "Türkçe",
     "langEn": "English"
+  },
+  "properties": {
+    "font": "Yazı tipi",
+    "sans": "Sans",
+    "serif": "Serif",
+    "mono": "Mono",
+    "size": "Punto",
+    "color": "Renk",
+    "bold": "Kalın",
+    "italic": "İtalik",
+    "left": "Sola hizala",
+    "center": "Ortala",
+    "right": "Sağa hizala",
+    "fill": "Dolgu",
+    "border": "Kenarlık",
+    "width": "Kalınlık",
+    "opacity": "Saydamlık",
+    "note": "Not",
+    "notePlaceholder": "Not yazın..."
+  },
+  "dialogs": {
+    "unsaved": {
+      "title": "Kaydedilmemiş değişiklikler",
+      "message": "{{name}} belgesinde kaydedilmemiş değişiklikler var. Kaydetmek ister misiniz?",
+      "discard": "Kaydetme"
+    },
+    "deletePages": {
+      "title": "Sayfaları sil",
+      "message": "{{pages}} numaralı sayfalar silinecek. Bu işlem geri alınabilir.",
+      "confirm": "Sil"
+    },
+    "extract": {
+      "title": "Sayfaları çıkar",
+      "confirm": "Çıkar"
+    },
+    "pageRange": {
+      "label": "Sayfa aralığı (1–{{count}})",
+      "selected": "{{count}} sayfa seçildi",
+      "invalid": "Geçerli bir aralık girin, örneğin 1-3, 5"
+    },
+    "split": {
+      "title": "PDF böl",
+      "every": "Her",
+      "pages": "sayfada bir",
+      "ranges": "Aralıklarla böl",
+      "confirm": "Böl",
+      "result": "{{pageCount}} sayfa, {{count}} dosya"
+    },
+    "signature": {
+      "title": "İmza çiz",
+      "place": "Yerleştir",
+      "clear": "Temizle",
+      "useLast": "Son imzayı kullan",
+      "hint": "Fare veya kalemle imzanızı çizin."
+    }
   },
   "sidebar": {
     "thumbnails": "Sayfalar",
@@ -108,10 +167,19 @@
     "CORRUPT": "Bu dosya hasarlı veya geçerli bir PDF belgesi değil.",
     "PASSWORD": "Bu PDF parola korumalı. Şifreli belgeler henüz desteklenmiyor.",
     "NOT_ALLOWED": "Bu dosyaya erişim izni verilmedi.",
+    "UNSUPPORTED_IMAGE": "Bu resim açılamadı. PNG veya JPG kullanın.",
     "UNKNOWN": "Beklenmeyen bir hata oluştu.",
-    "printFailed": "Yazdırma başarısız oldu."
+    "printFailed": "Yazdırma başarısız oldu.",
+    "ENCRYPTED": "Bu PDF şifreli. Şifreli belgeler düzenlenemez.",
+    "editFailed": "Belge değiştirilemedi.",
+    "deleteAllPages": "Belgedeki bütün sayfalar silinemez.",
+    "noText": "Bu sayfada düzenlenebilir metin yok. Taranmış sayfalarda Metin Ekle kullanın."
   },
   "messages": {
-    "saved": "{{name}} kaydedildi"
+    "saved": "{{name}} kaydedildi",
+    "extracted": "{{name}} kaydedildi",
+    "merged": "{{count}} PDF birleştirildi",
+    "split": "{{count}} dosya kaydedildi",
+    "reorderHint": "Sayfaları sıralamak için küçük resimleri sürükleyin. Ctrl veya Shift ile birden fazla sayfa seçebilirsiniz."
   }
 }

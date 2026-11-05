@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useRef, useState, type ReactNode } from 'react'
 import type { PDFDocumentProxy } from 'pdfjs-dist'
 import { renderPageToCanvas } from '../../services/pdfService'
 import type { PageSize } from '../../store/useAppStore'
@@ -11,6 +11,8 @@ interface PageCanvasProps {
   /** Delay before re-rendering after a scale change, so rapid zooming stays smooth. */
   renderDelayMs?: number
   className?: string
+  /** Extra content above the bitmap (text layer, edits); receives whether the page is near view. */
+  layers?: (visible: boolean) => ReactNode
 }
 
 /**
@@ -24,7 +26,8 @@ export function PageCanvas({
   size,
   scale,
   renderDelayMs = 0,
-  className = ''
+  className = '',
+  layers
 }: PageCanvasProps): JSX.Element {
   const containerRef = useRef<HTMLDivElement>(null)
   const canvasRef = useRef<HTMLCanvasElement>(null)
@@ -74,6 +77,7 @@ export function PageCanvas({
       data-page={pageNumber}
     >
       <canvas ref={canvasRef} className="block h-full w-full" />
+      {layers?.(visible)}
     </div>
   )
 }

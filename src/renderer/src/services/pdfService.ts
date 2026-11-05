@@ -53,7 +53,15 @@ export async function loadPdf(bytes: Uint8Array): Promise<LoadedPdf> {
     for (let i = 1; i <= pdf.numPages; i++) {
       const page = await pdf.getPage(i)
       const { width, height } = page.getViewport({ scale: 1 })
-      pageSizes.push({ width, height })
+      const [x0, y0, x1, y1] = page.view
+      pageSizes.push({
+        width,
+        height,
+        baseWidth: x1 - x0,
+        baseHeight: y1 - y0,
+        rotation: page.rotate,
+        viewBox: [x0, y0, x1, y1]
+      })
     }
     return { pdf, pageSizes }
   } catch (err) {
@@ -75,11 +83,6 @@ export async function resolveDestinationPage(
     return (await pdf.getPageIndex(ref as { num: number; gen: number })) + 1
   }
   return null
-}
-
-/** Bytes to write on save. Editing phases will apply their changes here via pdf-lib. */
-export async function exportPdf(bytes: Uint8Array): Promise<Uint8Array> {
-  return bytes
 }
 
 /** Renders a page into a canvas at the given CSS scale, honoring device pixel ratio. */

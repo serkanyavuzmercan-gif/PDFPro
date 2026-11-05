@@ -1,5 +1,6 @@
 import { app, BrowserWindow, ipcMain } from 'electron'
 import { IpcChannels } from '../shared/ipc'
+import { attachCloseGuard, registerCloseGuardHandlers } from './closeGuard'
 import { approvePath, registerFileHandlers } from './ipc/fileHandlers'
 import { setupApplicationMenu } from './menu'
 import { handleAppScheme, registerAppScheme } from './protocol'
@@ -58,19 +59,25 @@ if (!gotLock) {
     setupApplicationMenu()
     handleAppScheme()
     registerFileHandlers()
+    registerCloseGuardHandlers()
     ipcMain.handle(IpcChannels.appGetPendingFile, () => {
       const file = pendingFile
       pendingFile = null
       return file
     })
 
-    mainWindow = createMainWindow()
-    mainWindow.on('closed', () => {
-      mainWindow = null
-    })
+    const openWindow = (): void => {
+      const win = createMainWindow()
+      attachCloseGuard(win)
+      win.on('closed', () => {
+        if (mainWindow === win) mainWindow = null
+      })
+      mainWindow = win
+    }
+    openWindow()
 
     app.on('activate', () => {
-      if (BrowserWindow.getAllWindows().length === 0) mainWindow = createMainWindow()
+      if (BrowserWindow.getAllWindows().length === 0) openWindow()
     })
   })
 

@@ -1,14 +1,45 @@
 import type { OpenedFile, Result } from '../../../shared/ipc'
+import { openDialog } from '../components/dialogs/dialogStore'
+import { commitDraft } from '../editing/draft'
+import { exportEdits } from '../editing/exportEdits'
+import { isDirty, markSaved } from '../editing/history'
 import { useAppStore } from '../store/useAppStore'
-import { exportPdf, loadPdf, PdfLoadError } from './pdfService'
+import { useEditStore } from '../store/useEditStore'
+import { loadPdf, PdfLoadError } from './pdfService'
 import { preparePrintPages } from './printService'
 
 const store = useAppStore.getState
+const edit = useEditStore.getState
 
-function reportFailure(result: Extract<Result<unknown>, { ok: false }>): void {
+export function reportFailure(result: Extract<Result<unknown>, { ok: false }>): void {
   if (result.code === 'CANCELLED') return
   if (result.message) console.error(result.code, result.message)
   store().showNotice({ kind: 'error', key: `errors.${result.code}` })
+}
+
+/** Shows a notice for errors thrown while modifying a document with pdf-lib. */
+export function reportEditError(err: unknown): void {
+  console.error(err)
+  const encrypted = err instanceof Error && /encrypt/i.test(`${err.name} ${err.message}`)
+  store().showNotice({ kind: 'error', key: encrypted ? 'errors.ENCRYPTED' : 'errors.editFailed' })
+}
+
+/** Commits the open text box and returns the bytes with all edits written into the PDF. */
+export async function exportCurrent(): Promise<Uint8Array | null> {
+  commitDraft()
+  const doc = store().document
+  if (!doc) return null
+  return exportEdits(doc.bytes, edit().objects, doc.pageSizes)
+}
+
+/** Shows a document (new or reopened) and starts a fresh edit history. */
+export async function showDocument(
+  file: { path: string | null; name: string; data: Uint8Array },
+  options: { unsaved?: boolean } = {}
+): Promise<void> {
+  const { pdf, pageSizes } = await loadPdf(file.data)
+  store().setDocument({ path: file.path, name: file.name, bytes: file.data, pdf, pageSizes })
+  edit().reset(options.unsaved ? null : file.data)
 }
 
 async function loadOpenedFile(result: Result<OpenedFile>): Promise<void> {
@@ -16,12 +47,10 @@ async function loadOpenedFile(result: Result<OpenedFile>): Promise<void> {
     reportFailure(result)
     return
   }
-  const { path, name, data } = result.value
-  const { setLoading, setDocument, showNotice } = store()
+  const { setLoading, showNotice } = store()
   setLoading(true)
   try {
-    const { pdf, pageSizes } = await loadPdf(data)
-    setDocument({ path, name, bytes: data, pdf, pageSizes })
+    await showDocument(result.value)
     showNotice(null)
   } catch (err) {
     console.error(err)
@@ -32,39 +61,80 @@ async function loadOpenedFile(result: Result<OpenedFile>): Promise<void> {
   }
 }
 
+/** Asks what to do with unsaved changes. Resolves true when it is fine to continue. */
+export async function confirmUnsaved(): Promise<boolean> {
+  commitDraft()
+  const doc = store().document
+  if (!doc || !isDirty(store(), edit())) return true
+  const choice = await openDialog({ type: 'unsaved', name: doc.name })
+  if (choice === 'cancel') return false
+  if (choice === 'discard') return true
+  return save()
+}
+
 export async function openFromDialog(): Promise<void> {
+  if (!(await confirmUnsaved())) return
   await loadOpenedFile(await window.api.openFile())
 }
 
 export async function openFromPath(path: string): Promise<void> {
+  if (!(await confirmUnsaved())) return
   await loadOpenedFile(await window.api.readFile(path))
 }
 
-export async function saveAs(): Promise<void> {
-  const doc = store().document
-  if (!doc) return
-  const result = await window.api.saveFileAs(await exportPdf(doc.bytes), doc.name)
-  if (!result.ok) return reportFailure(result)
-  store().updateDocument({ path: result.value.path, name: result.value.name })
-  store().showNotice({ kind: 'info', key: 'messages.saved', params: { name: result.value.name } })
+async function exportOrReport(): Promise<Uint8Array | null> {
+  try {
+    return await exportCurrent()
+  } catch (err) {
+    reportEditError(err)
+    return null
+  }
 }
 
-export async function save(): Promise<void> {
+export async function saveAs(): Promise<boolean> {
   const doc = store().document
-  if (!doc) return
-  if (!doc.path) return saveAs()
-  const result = await window.api.saveFile(doc.path, await exportPdf(doc.bytes))
-  if (!result.ok) return reportFailure(result)
+  if (!doc) return false
+  const bytes = await exportOrReport()
+  if (!bytes) return false
+  const result = await window.api.saveFileAs(bytes, doc.name)
+  if (!result.ok) {
+    reportFailure(result)
+    return false
+  }
+  store().updateDocument({ path: result.value.path, name: result.value.name })
+  markSaved()
   store().showNotice({ kind: 'info', key: 'messages.saved', params: { name: result.value.name } })
+  return true
+}
+
+export async function save(): Promise<boolean> {
+  const doc = store().document
+  if (!doc) return false
+  if (!doc.path) return saveAs()
+  const bytes = await exportOrReport()
+  if (!bytes) return false
+  const result = await window.api.saveFile(doc.path, bytes)
+  if (!result.ok) {
+    reportFailure(result)
+    return false
+  }
+  markSaved()
+  store().showNotice({ kind: 'info', key: 'messages.saved', params: { name: result.value.name } })
+  return true
 }
 
 export async function print(): Promise<void> {
   const doc = store().document
   if (!doc) return
+  const bytes = await exportOrReport()
+  if (!bytes) return
   store().setLoading(true)
   let cleanup: (() => void) | null = null
+  let printDoc = doc.pdf
   try {
-    cleanup = await preparePrintPages(doc.pdf)
+    // Edits are printed as they will be saved.
+    if (bytes !== doc.bytes) printDoc = (await loadPdf(bytes)).pdf
+    cleanup = await preparePrintPages(printDoc)
     store().setLoading(false)
     const result = await window.api.print()
     if (!result.ok) reportFailure(result)
@@ -73,10 +143,13 @@ export async function print(): Promise<void> {
     store().showNotice({ kind: 'error', key: 'errors.printFailed' })
   } finally {
     cleanup?.()
+    if (printDoc !== doc.pdf) void printDoc.loadingTask.destroy()
     store().setLoading(false)
   }
 }
 
-export function closeDocument(): void {
+export async function closeDocument(): Promise<void> {
+  if (!(await confirmUnsaved())) return
   store().setDocument(null)
+  edit().reset(null)
 }

@@ -4,13 +4,14 @@
     "about": "PDFPro - Professional PDF Editor"
   },
   "common": {
-    "comingSoon": "Coming soon",
     "language": "Language",
     "noDocument": "No document open",
     "openHint": "Open a PDF file to get started",
     "openButton": "Open PDF",
     "loading": "Loading document...",
     "dismiss": "Dismiss",
+    "cancel": "Cancel",
+    "close": "Close",
     "untitled": "Untitled"
   },
   "ribbon": {
@@ -85,8 +86,66 @@
     "splitPdf": "Split PDF",
     "drawSignature": "Draw Signature",
     "imageSignature": "Image Signature",
+    "deleteObject": "Delete Object",
+    "movePagesUp": "Move Pages Up",
+    "movePagesDown": "Move Pages Down",
     "langTr": "Türkçe",
     "langEn": "English"
+  },
+  "properties": {
+    "font": "Font",
+    "sans": "Sans",
+    "serif": "Serif",
+    "mono": "Mono",
+    "size": "Size",
+    "color": "Color",
+    "bold": "Bold",
+    "italic": "Italic",
+    "left": "Align left",
+    "center": "Align center",
+    "right": "Align right",
+    "fill": "Fill",
+    "border": "Border",
+    "width": "Width",
+    "opacity": "Opacity",
+    "note": "Note",
+    "notePlaceholder": "Type a note..."
+  },
+  "dialogs": {
+    "unsaved": {
+      "title": "Unsaved changes",
+      "message": "{{name}} has unsaved changes. Do you want to save them?",
+      "discard": "Don't Save"
+    },
+    "deletePages": {
+      "title": "Delete pages",
+      "message": "Pages {{pages}} will be deleted. This can be undone.",
+      "confirm": "Delete"
+    },
+    "extract": {
+      "title": "Extract pages",
+      "confirm": "Extract"
+    },
+    "pageRange": {
+      "label": "Page range (1–{{count}})",
+      "selected": "{{count}} pages selected",
+      "invalid": "Enter a valid range, for example 1-3, 5"
+    },
+    "split": {
+      "title": "Split PDF",
+      "every": "Every",
+      "pages": "pages",
+      "ranges": "Split by ranges",
+      "confirm": "Split",
+      "result": "{{pageCount}} pages, {{count}} files"
+    },
+    "signature": {
+      "title": "Draw signature",
+      "place": "Place",
+      "clear": "Clear",
+      "useLast": "Use last signature",
+      "hint": "Draw your signature with the mouse or a pen."
+    }
   },
   "sidebar": {
     "thumbnails": "Pages",
@@ -108,10 +167,19 @@
     "CORRUPT": "This file is damaged or is not a valid PDF document.",
     "PASSWORD": "This PDF is password protected. Encrypted documents are not supported yet.",
     "NOT_ALLOWED": "Access to this file was not granted.",
+    "UNSUPPORTED_IMAGE": "This image could not be opened. Use a PNG or JPG file.",
     "UNKNOWN": "An unexpected error occurred.",
-    "printFailed": "Printing failed."
+    "printFailed": "Printing failed.",
+    "ENCRYPTED": "This PDF is encrypted. Encrypted documents cannot be edited.",
+    "editFailed": "The document could not be modified.",
+    "deleteAllPages": "A document must keep at least one page.",
+    "noText": "This page has no editable text. Use Add Text on scanned pages."
   },
   "messages": {
-    "saved": "Saved {{name}}"
+    "saved": "Saved {{name}}",
+    "extracted": "Saved {{name}}",
+    "merged": "Merged {{count}} PDFs",
+    "split": "Saved {{count}} files",
+    "reorderHint": "Drag thumbnails to reorder pages. Hold Ctrl or Shift to select more than one page."
   }
 }

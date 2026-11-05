@@ -1,6 +1,6 @@
 import { useTranslation } from 'react-i18next'
 import logo from '../../assets/logo.png'
-import { useAppStore } from '../../store/useAppStore'
+import { isDirty, useBothStores } from '../../editing/history'
 import { LanguageToggle } from './LanguageToggle'
 import { QuickAccessBar } from './QuickAccessBar'
 
@@ -11,7 +11,8 @@ const rightInset = platform === 'darwin' ? 'pr-3' : 'pr-[150px]'
 
 export function TitleBar(): JSX.Element {
   const { t } = useTranslation()
-  const fileName = useAppStore((s) => s.document?.name)
+  const fileName = useBothStores((s) => s.document?.name)
+  const dirty = useBothStores((s, e) => isDirty(s, e))
 
   return (
     <header
@@ -22,7 +23,7 @@ export function TitleBar(): JSX.Element {
       <span className="mx-1 h-4 w-px bg-chrome-border" />
       <QuickAccessBar />
       <div className="min-w-0 flex-1 truncate text-center text-[12px] text-ink-muted">
-        {fileName ? `${fileName} - ${t('app.name')}` : t('app.about')}
+        {fileName ? `${dirty ? '* ' : ''}${fileName} - ${t('app.name')}` : t('app.about')}
       </div>
       <LanguageToggle />
     </header>

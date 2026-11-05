@@ -1,7 +1,7 @@
 {
   "name": "pdfpro",
   "productName": "PDFPro",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "PDFPro - Professional desktop PDF editor",
   "main": "./out/main/index.js",
   "author": "PDFPro",
@@ -22,11 +22,13 @@
     "dist:mac": "npm run icons && npm run build && electron-builder --mac"
   },
   "devDependencies": {
+    "@pdf-lib/fontkit": "^1.1.1",
     "@tailwindcss/vite": "^4.3.4",
     "@types/node": "^26.6.6",
     "@types/react": "^18.3.31",
     "@types/react-dom": "^18.3.7",
     "@vitejs/plugin-react": "^6.2.1",
+    "dejavu-fonts-ttf": "^2.37.3",
     "electron": "^45.2.3",
     "electron-builder": "^26.18.0",
     "electron-vite": "^6.0.0",

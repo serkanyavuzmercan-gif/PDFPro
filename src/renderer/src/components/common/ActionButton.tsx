@@ -1,6 +1,6 @@
 import { useTranslation } from 'react-i18next'
 import { getAction, isActionEnabled, runAction, type ActionId } from '../../actions/actions'
-import { useAppStore } from '../../store/useAppStore'
+import { useBothStores } from '../../editing/history'
 import { Tooltip } from './Tooltip'
 
 export type ActionButtonVariant = 'large' | 'small' | 'icon'
@@ -27,17 +27,13 @@ const iconSize: Record<ActionButtonVariant, number> = { large: 26, small: 15, ic
 export function ActionButton({ id, variant }: ActionButtonProps): JSX.Element {
   const { t } = useTranslation()
   const action = getAction(id)
-  const enabled = useAppStore((s) => isActionEnabled(id, s))
-  const active = useAppStore((s) => action.active?.(s) ?? false)
+  const enabled = useBothStores((s, e) => isActionEnabled(id, s, e))
+  const active = useBothStores((s, e) => action.active?.(s, e) ?? false)
   const Icon = action.icon
   const label = t(action.labelKey)
 
   return (
-    <Tooltip
-      title={label}
-      shortcut={formatShortcut(action.shortcut)}
-      description={action.soon ? t('common.comingSoon') : undefined}
-    >
+    <Tooltip title={label} shortcut={formatShortcut(action.shortcut)}>
       <button
         type="button"
         aria-label={label}

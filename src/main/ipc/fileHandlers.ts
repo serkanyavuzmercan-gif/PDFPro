@@ -1,10 +1,11 @@
 import { readFile, writeFile } from 'node:fs/promises'
-import { basename, resolve } from 'node:path'
+import { basename, join, resolve } from 'node:path'
 import { BrowserWindow, dialog, ipcMain } from 'electron'
 import {
   IpcChannels,
   type FileErrorCode,
   type OpenedFile,
+  type OpenedImage,
   type Result,
   type SavedFile
 } from '../../shared/ipc'
@@ -14,10 +15,17 @@ import {
  * command line, OS "open with"), never arbitrary paths it supplies itself.
  */
 const approvedPaths = new Set<string>()
+const approvedDirs = new Set<string>()
 
 export function approvePath(path: string): string {
   const normalized = resolve(path)
   approvedPaths.add(normalized.toLowerCase())
+  return normalized
+}
+
+function approveDirectory(dir: string): string {
+  const normalized = resolve(dir)
+  approvedDirs.add(normalized.toLowerCase())
   return normalized
 }
 
@@ -68,19 +76,87 @@ async function writePdf(path: string, data: Uint8Array): Promise<Result<SavedFil
   }
 }
 
+function imageFormat(data: Uint8Array): 'png' | 'jpg' | null {
+  if (data[0] === 0x89 && data[1] === 0x50 && data[2] === 0x4e && data[3] === 0x47) return 'png'
+  if (data[0] === 0xff && data[1] === 0xd8 && data[2] === 0xff) return 'jpg'
+  return null
+}
+
+async function showOpen(
+  sender: Electron.WebContents,
+  options: Electron.OpenDialogOptions
+): Promise<string[]> {
+  const win = BrowserWindow.fromWebContents(sender)
+  const { canceled, filePaths } = win
+    ? await dialog.showOpenDialog(win, options)
+    : await dialog.showOpenDialog(options)
+  return canceled ? [] : filePaths
+}
+
+const PDF_FILTER = [{ name: 'PDF', extensions: ['pdf'] }]
+
 export function registerFileHandlers(): void {
   ipcMain.handle(IpcChannels.fileOpen, async (event): Promise<Result<OpenedFile>> => {
-    const win = BrowserWindow.fromWebContents(event.sender)
-    const options: Electron.OpenDialogOptions = {
-      properties: ['openFile'],
-      filters: [{ name: 'PDF', extensions: ['pdf'] }]
-    }
-    const { canceled, filePaths } = win
-      ? await dialog.showOpenDialog(win, options)
-      : await dialog.showOpenDialog(options)
-    if (canceled || filePaths.length === 0) return fail('CANCELLED')
-    return readPdf(approvePath(filePaths[0]))
+    const [path] = await showOpen(event.sender, { properties: ['openFile'], filters: PDF_FILTER })
+    if (!path) return fail('CANCELLED')
+    return readPdf(approvePath(path))
   })
+
+  ipcMain.handle(IpcChannels.fileOpenMany, async (event): Promise<Result<OpenedFile[]>> => {
+    const paths = await showOpen(event.sender, {
+      properties: ['openFile', 'multiSelections'],
+      filters: PDF_FILTER
+    })
+    if (paths.length === 0) return fail('CANCELLED')
+    const files: OpenedFile[] = []
+    for (const path of paths) {
+      const result = await readPdf(approvePath(path))
+      if (!result.ok) return { ...result, message: basename(path) }
+      files.push(result.value)
+    }
+    return { ok: true, value: files }
+  })
+
+  ipcMain.handle(IpcChannels.imageOpen, async (event): Promise<Result<OpenedImage>> => {
+    const [path] = await showOpen(event.sender, {
+      properties: ['openFile'],
+      filters: [{ name: 'PNG / JPG', extensions: ['png', 'jpg', 'jpeg'] }]
+    })
+    if (!path) return fail('CANCELLED')
+    try {
+      const data = new Uint8Array(await readFile(path))
+      const format = imageFormat(data)
+      if (!format) return fail('UNSUPPORTED_IMAGE')
+      return { ok: true, value: { name: basename(path), data, format } }
+    } catch (err) {
+      return fail(toErrorCode(err), err)
+    }
+  })
+
+  ipcMain.handle(IpcChannels.dirPick, async (event): Promise<Result<string>> => {
+    const [dir] = await showOpen(event.sender, { properties: ['openDirectory', 'createDirectory'] })
+    if (!dir) return fail('CANCELLED')
+    return { ok: true, value: approveDirectory(dir) }
+  })
+
+  ipcMain.handle(
+    IpcChannels.fileWriteInDir,
+    async (_event, dir: unknown, fileName: unknown, data: unknown): Promise<Result<SavedFile>> => {
+      if (typeof dir !== 'string' || !approvedDirs.has(resolve(dir).toLowerCase())) {
+        return fail('NOT_ALLOWED')
+      }
+      // Only a plain file name inside the chosen folder; no path components.
+      if (
+        typeof fileName !== 'string' ||
+        fileName !== basename(fileName) ||
+        !/^[^<>:"/\\|?*]+\.pdf$/i.test(fileName)
+      ) {
+        return fail('NOT_ALLOWED')
+      }
+      if (!(data instanceof Uint8Array)) return fail('UNKNOWN')
+      return writePdf(approvePath(join(dir, fileName)), data)
+    }
+  )
 
   ipcMain.handle(IpcChannels.fileReadPath, async (_event, path: unknown) => {
     if (typeof path !== 'string' || !isApproved(path)) return fail<OpenedFile>('NOT_ALLOWED')

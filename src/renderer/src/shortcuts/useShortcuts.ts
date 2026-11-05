@@ -1,5 +1,6 @@
 import { useEffect } from 'react'
 import { actions, getAction, runAction, type ActionId } from '../actions/actions'
+import { isDialogOpen } from '../components/dialogs/dialogStore'
 
 interface ParsedShortcut {
   id: ActionId
@@ -50,14 +51,18 @@ export function findShortcut(event: KeyboardEvent): ActionId | null {
   return isSymbol(key) ? (candidates.find((s) => !s.shift)?.id ?? null) : null
 }
 
+/** Shortcuts that still work while typing in a text field (others keep their native meaning there). */
+const TYPING_ALLOWED = new Set<ActionId>(['save', 'saveAs', 'open', 'print'])
+const REPEATABLE = new Set(['pagedown', 'pageup', 'arrowup', 'arrowdown'])
+
 export function useShortcuts(): void {
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent): void => {
-      if (event.repeat && !['pagedown', 'pageup'].includes(event.key.toLowerCase())) return
-      const hasModifier = event.ctrlKey || event.metaKey || event.altKey
-      if (isTypingTarget(event.target) && !hasModifier) return
+      if (event.repeat && !REPEATABLE.has(event.key.toLowerCase())) return
+      if (isDialogOpen()) return
       const id = findShortcut(event)
       if (!id) return
+      if (isTypingTarget(event.target) && !TYPING_ALLOWED.has(id)) return
       event.preventDefault()
       runAction(id)
     }

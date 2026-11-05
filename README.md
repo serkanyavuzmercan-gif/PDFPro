@@ -6,7 +6,7 @@
 
 ## Kurulum
 
-Windows kurulumu GitHub sürümünden indirilir: [PDFPro-Setup-0.1.0.exe](https://github.com/serkanyavuzmercan-gif/PDFPro/releases/download/v0.1.0/PDFPro-Setup-0.1.0.exe)
+Windows kurulumu GitHub sürümünden indirilir: [PDFPro-Setup-0.2.0.exe](https://github.com/serkanyavuzmercan-gif/PDFPro/releases/download/v0.2.0/PDFPro-Setup-0.2.0.exe)
 
 Kurulum sihirbazı kurulum klasörünü seçmenize izin verir ve masaüstü kısayolu oluşturur. `.pdf` dosyaları PDFPro ile açılır.
 
@@ -18,8 +18,12 @@ Kurulum sihirbazı kurulum klasörünü seçmenize izin verir ve masaüstü kıs
 - Sayfa küçük resimleri, yer imleri, sürekli veya tek sayfa görünümü, sayfaya gitme.
 - Yakınlaştırma: kaydırıcı, yüzde, sayfaya sığdır, genişliğe sığdır, Ctrl + fare tekerleği.
 - El aracı ile sürükleyerek kaydırma.
-
-Metin, işaretleme, resim, sayfa düzenleme ve imza araçları şeritte yer alır; sonraki sürümlerde etkinleşir.
+- Metin ekleme ve mevcut metni düzenleme (Türkçe karakter destekli).
+- Resim ekleme, nesne taşıma / boyutlandırma.
+- Vurgu, altını çiz, üstünü çiz, kalem, silgi, yapışkan not, yorum kutusu.
+- Sayfa döndürme, silme, sürükleyerek sıralama, çıkarma, birleştirme ve bölme.
+- İmza çizme veya resim imza yerleştirme.
+- Geri al / yinele ve kaydedilmemiş değişiklik uyarısı.
 
 ## Geliştirme
 

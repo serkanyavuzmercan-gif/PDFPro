@@ -1,6 +1,11 @@
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react'
+import { commitDraft } from '../../editing/draft'
+import { MARKUP_TOOLS, markupFromSelection } from '../../editing/pageTools'
 import { useAppStore, type OpenDocument } from '../../store/useAppStore'
+import { useEditStore } from '../../store/useEditStore'
 import { PageCanvas } from './PageCanvas'
+import { closeNote } from '../../editing/notes'
+import { PageLayers } from './PageLayers'
 import { usePanning } from './usePanning'
 
 const PAGE_GAP = 12
@@ -19,6 +24,7 @@ export function PdfViewer({ doc }: { doc: OpenDocument }): JSX.Element {
   const scrollMode = useAppStore((s) => s.scrollMode)
   const currentPage = useAppStore((s) => s.currentPage)
   const navRequest = useAppStore((s) => s.navRequest)
+  const markupType = useAppStore((s) => MARKUP_TOOLS[s.activeTool])
   const [viewportSize, setViewportSize] = useState({ width: 0, height: 0 })
   const zoomAnchorRef = useRef<ZoomAnchor | null>(null)
   const prevZoomRef = useRef(zoom)
@@ -122,14 +128,35 @@ export function PdfViewer({ doc }: { doc: OpenDocument }): JSX.Element {
     else if (event.deltaY < 0 && atTop) goToPage(page - 1)
   }
 
+  // Clicking anywhere outside the open text box, selection or note commits / clears them.
+  const onPointerDownCapture = (event: React.PointerEvent<HTMLDivElement>): void => {
+    const target = event.target as HTMLElement
+    if (!target.closest('[data-draft]')) commitDraft()
+    if (!target.closest('[data-object]')) useEditStore.getState().select(null)
+    if (!target.closest('[data-note-popup]') && !target.closest('[data-object]')) closeNote()
+  }
+
+  // Markup tools turn a finished text selection into highlight / underline / strikeout.
+  useEffect(() => {
+    if (!markupType) return
+    const onPointerUp = (): void => {
+      // Let the browser finalize the selection first.
+      window.setTimeout(() => markupFromSelection(markupType), 0)
+    }
+    document.addEventListener('pointerup', onPointerUp)
+    return () => document.removeEventListener('pointerup', onPointerUp)
+  }, [markupType])
+
   const cursor = panning ? 'cursor-grabbing' : panEnabled ? 'cursor-grab' : ''
 
   return (
     <div
       ref={scrollRef}
+      data-viewer
       className={`relative h-full w-full overflow-auto bg-workspace ${cursor}`}
       onScroll={onScroll}
       onWheel={onWheelSingle}
+      onPointerDownCapture={onPointerDownCapture}
       {...panHandlers}
     >
       <div
@@ -145,6 +172,15 @@ export function PdfViewer({ doc }: { doc: OpenDocument }): JSX.Element {
             scale={zoom}
             renderDelayMs={120}
             className={`shrink-0 shadow-[0_1px_4px_rgba(0,0,0,0.25)] ${panEnabled ? 'pointer-events-none' : ''}`}
+            layers={(visible) => (
+              <PageLayers
+                pdf={doc.pdf}
+                pageIndex={pageNumber - 1}
+                size={doc.pageSizes[pageNumber - 1]}
+                zoom={zoom}
+                visible={visible}
+              />
+            )}
           />
         ))}
       </div>
