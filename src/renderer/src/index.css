@@ -1,0 +1,76 @@
+@import 'tailwindcss';
+
+@theme {
+  --color-brand: #d71920;
+  --color-brand-dark: #b0141a;
+  --color-brand-soft: #fdecec;
+  --color-chrome: #f3f3f5;
+  --color-chrome-border: #d9dadf;
+  --color-workspace: #e4e5ea;
+  --color-ink: #2b2d33;
+  --color-ink-muted: #6b6f7a;
+  --font-sans: 'Segoe UI', system-ui, -apple-system, 'Helvetica Neue', Arial, sans-serif;
+}
+
+@layer base {
+  html,
+  body,
+  #root {
+    height: 100%;
+    margin: 0;
+    overflow: hidden;
+  }
+
+  body {
+    font-family: var(--font-sans);
+    font-size: 12px;
+    color: var(--color-ink);
+    background: var(--color-workspace);
+    user-select: none;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  button {
+    cursor: default;
+  }
+}
+
+@utility drag-region {
+  -webkit-app-region: drag;
+}
+
+@utility no-drag {
+  -webkit-app-region: no-drag;
+}
+
+#print-root {
+  display: none;
+}
+
+@media print {
+  @page {
+    margin: 0;
+  }
+
+  html,
+  body {
+    height: auto;
+    overflow: visible;
+    background: #fff;
+  }
+
+  #root {
+    display: none;
+  }
+
+  #print-root {
+    display: block;
+  }
+
+  #print-root img {
+    display: block;
+    width: 100%;
+    page-break-after: always;
+    break-after: page;
+  }
+}

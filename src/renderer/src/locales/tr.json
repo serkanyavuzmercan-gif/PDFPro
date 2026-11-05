@@ -1,0 +1,117 @@
+{
+  "app": {
+    "name": "PDFPro",
+    "about": "PDFPro - Profesyonel PDF Düzenleyici"
+  },
+  "common": {
+    "comingSoon": "Yakında",
+    "language": "Dil",
+    "noDocument": "Açık belge yok",
+    "openHint": "Başlamak için bir PDF dosyası açın",
+    "openButton": "PDF Aç",
+    "loading": "Belge yükleniyor...",
+    "dismiss": "Kapat",
+    "untitled": "Adsız"
+  },
+  "ribbon": {
+    "tabs": {
+      "file": "Dosya",
+      "home": "Giriş",
+      "edit": "Düzenle",
+      "view": "Görünüm",
+      "comment": "Yorum",
+      "pages": "Sayfalar",
+      "protect": "Koruma"
+    },
+    "groups": {
+      "document": "Belge",
+      "output": "Çıktı",
+      "tools": "Araçlar",
+      "zoom": "Yakınlaştırma",
+      "navigation": "Gezinme",
+      "pageDisplay": "Sayfa Görünümü",
+      "panels": "Paneller",
+      "text": "Metin",
+      "objects": "Nesneler",
+      "markup": "Metin İşaretleme",
+      "drawing": "Çizim",
+      "notes": "Notlar",
+      "organize": "Düzenleme",
+      "transform": "Döndür",
+      "combine": "Birleştir",
+      "signature": "İmza",
+      "language": "Dil"
+    }
+  },
+  "tools": {
+    "open": "Aç",
+    "save": "Kaydet",
+    "saveAs": "Farklı Kaydet",
+    "print": "Yazdır",
+    "close": "Kapat",
+    "undo": "Geri Al",
+    "redo": "Yinele",
+    "hand": "El",
+    "select": "Seç",
+    "zoomIn": "Yakınlaştır",
+    "zoomOut": "Uzaklaştır",
+    "actualSize": "Gerçek Boyut",
+    "fitPage": "Sayfaya Sığdır",
+    "fitWidth": "Genişliğe Sığdır",
+    "firstPage": "İlk Sayfa",
+    "prevPage": "Önceki Sayfa",
+    "nextPage": "Sonraki Sayfa",
+    "lastPage": "Son Sayfa",
+    "singlePage": "Tek Sayfa",
+    "continuous": "Sürekli",
+    "sidebar": "Gezinme Paneli",
+    "addText": "Metin Ekle",
+    "editText": "Metni Düzenle",
+    "insertImage": "Resim Ekle",
+    "editObject": "Nesne Düzenle",
+    "highlight": "Vurgula",
+    "underline": "Altını Çiz",
+    "strikeout": "Üstünü Çiz",
+    "pen": "Kalem",
+    "eraser": "Silgi",
+    "stickyNote": "Yapışkan Not",
+    "commentBox": "Yorum Kutusu",
+    "rotateLeft": "Sola Döndür",
+    "rotateRight": "Sağa Döndür",
+    "deletePage": "Sayfaları Sil",
+    "extractPages": "Sayfaları Çıkar",
+    "reorderPages": "Sayfaları Sırala",
+    "mergePdfs": "PDF Birleştir",
+    "splitPdf": "PDF Böl",
+    "drawSignature": "İmza Çiz",
+    "imageSignature": "Resim İmza",
+    "langTr": "Türkçe",
+    "langEn": "English"
+  },
+  "sidebar": {
+    "thumbnails": "Sayfalar",
+    "bookmarks": "Yer İmleri",
+    "noBookmarks": "Bu belgede yer imi yok"
+  },
+  "status": {
+    "page": "Sayfa",
+    "of": "/",
+    "goToPage": "Sayfaya git"
+  },
+  "zoom": {
+    "slider": "Yakınlaştırma düzeyi",
+    "percent": "Yakınlaştırma yüzdesi"
+  },
+  "errors": {
+    "EACCES": "Erişim reddedildi. Dosya salt okunur olabilir veya başka bir program tarafından kullanılıyor olabilir.",
+    "ENOENT": "Dosya bulunamadı. Taşınmış veya silinmiş olabilir.",
+    "CORRUPT": "Bu dosya hasarlı veya geçerli bir PDF belgesi değil.",
+    "PASSWORD": "Bu PDF parola korumalı. Şifreli belgeler henüz desteklenmiyor.",
+    "NOT_ALLOWED": "Bu dosyaya erişim izni verilmedi.",
+    "UNKNOWN": "Beklenmeyen bir hata oluştu.",
+    "printFailed": "Yazdırma başarısız oldu."
+  },
+  "messages": {
+    "saved": "{{name}} kaydedildi"
+  }
+}

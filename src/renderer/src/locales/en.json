@@ -1,0 +1,117 @@
+{
+  "app": {
+    "name": "PDFPro",
+    "about": "PDFPro - Professional PDF Editor"
+  },
+  "common": {
+    "comingSoon": "Coming soon",
+    "language": "Language",
+    "noDocument": "No document open",
+    "openHint": "Open a PDF file to get started",
+    "openButton": "Open PDF",
+    "loading": "Loading document...",
+    "dismiss": "Dismiss",
+    "untitled": "Untitled"
+  },
+  "ribbon": {
+    "tabs": {
+      "file": "File",
+      "home": "Home",
+      "edit": "Edit",
+      "view": "View",
+      "comment": "Comment",
+      "pages": "Pages",
+      "protect": "Protect"
+    },
+    "groups": {
+      "document": "Document",
+      "output": "Output",
+      "tools": "Tools",
+      "zoom": "Zoom",
+      "navigation": "Navigation",
+      "pageDisplay": "Page Display",
+      "panels": "Panels",
+      "text": "Text",
+      "objects": "Objects",
+      "markup": "Text Markup",
+      "drawing": "Drawing",
+      "notes": "Notes",
+      "organize": "Organize",
+      "transform": "Rotate",
+      "combine": "Combine",
+      "signature": "Signature",
+      "language": "Language"
+    }
+  },
+  "tools": {
+    "open": "Open",
+    "save": "Save",
+    "saveAs": "Save As",
+    "print": "Print",
+    "close": "Close",
+    "undo": "Undo",
+    "redo": "Redo",
+    "hand": "Hand",
+    "select": "Select",
+    "zoomIn": "Zoom In",
+    "zoomOut": "Zoom Out",
+    "actualSize": "Actual Size",
+    "fitPage": "Fit Page",
+    "fitWidth": "Fit Width",
+    "firstPage": "First Page",
+    "prevPage": "Previous Page",
+    "nextPage": "Next Page",
+    "lastPage": "Last Page",
+    "singlePage": "Single Page",
+    "continuous": "Continuous",
+    "sidebar": "Navigation Panel",
+    "addText": "Add Text",
+    "editText": "Edit Text",
+    "insertImage": "Insert Image",
+    "editObject": "Edit Object",
+    "highlight": "Highlight",
+    "underline": "Underline",
+    "strikeout": "Strikeout",
+    "pen": "Pen",
+    "eraser": "Eraser",
+    "stickyNote": "Sticky Note",
+    "commentBox": "Comment Box",
+    "rotateLeft": "Rotate Left",
+    "rotateRight": "Rotate Right",
+    "deletePage": "Delete Pages",
+    "extractPages": "Extract Pages",
+    "reorderPages": "Reorder Pages",
+    "mergePdfs": "Merge PDFs",
+    "splitPdf": "Split PDF",
+    "drawSignature": "Draw Signature",
+    "imageSignature": "Image Signature",
+    "langTr": "Türkçe",
+    "langEn": "English"
+  },
+  "sidebar": {
+    "thumbnails": "Pages",
+    "bookmarks": "Bookmarks",
+    "noBookmarks": "This document has no bookmarks"
+  },
+  "status": {
+    "page": "Page",
+    "of": "of",
+    "goToPage": "Go to page"
+  },
+  "zoom": {
+    "slider": "Zoom level",
+    "percent": "Zoom percentage"
+  },
+  "errors": {
+    "EACCES": "Permission denied. The file may be read-only or in use by another program.",
+    "ENOENT": "The file could not be found. It may have been moved or deleted.",
+    "CORRUPT": "This file is damaged or is not a valid PDF document.",
+    "PASSWORD": "This PDF is password protected. Encrypted documents are not supported yet.",
+    "NOT_ALLOWED": "Access to this file was not granted.",
+    "UNKNOWN": "An unexpected error occurred.",
+    "printFailed": "Printing failed."
+  },
+  "messages": {
+    "saved": "Saved {{name}}"
+  }
+}

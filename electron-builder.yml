@@ -1,0 +1,54 @@
+appId: com.pdfpro.app
+productName: PDFPro
+copyright: Copyright © 2026 PDFPro
+
+directories:
+  buildResources: build
+  output: release/${version}
+
+# Reuse the locally installed Electron instead of downloading it again.
+electronDist: node_modules/electron/dist
+
+files:
+  - out/**
+  - package.json
+
+extraResources:
+  - from: build/icon.png
+    to: icon.png
+
+fileAssociations:
+  - ext: pdf
+    name: PDF Document
+    description: PDF Document
+    mimeType: application/pdf
+    role: Editor
+
+win:
+  executableName: PDFPro
+  icon: build/icon.ico
+  target:
+    - target: nsis
+      arch: [x64]
+
+nsis:
+  oneClick: false
+  perMachine: false
+  allowToChangeInstallationDirectory: true
+  createDesktopShortcut: always
+  createStartMenuShortcut: true
+  shortcutName: PDFPro
+  installerIcon: build/icon.ico
+  uninstallerIcon: build/icon.ico
+  installerHeaderIcon: build/icon.ico
+  artifactName: ${productName}-Setup-${version}.${ext}
+
+mac:
+  # electron-builder generates icon.icns from the 1024px PNG.
+  icon: build/icon.png
+  category: public.app-category.productivity
+  # Builds for the host architecture, matching the local electronDist.
+  target: dmg
+
+dmg:
+  artifactName: ${productName}-${version}-${arch}.${ext}

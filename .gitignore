@@ -1,0 +1,9 @@
+node_modules
+out
+dist
+release
+src/renderer/public/pdfjs
+*.log
+*.tsbuildinfo
+.DS_Store
+electron.exe
