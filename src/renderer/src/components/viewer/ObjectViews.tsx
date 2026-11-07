@@ -84,7 +84,11 @@ export function MarkupShape({ obj }: { obj: MarkupObject }): JSX.Element {
   )
 }
 
-export function InkShape({ obj }: { obj: Pick<InkObject, 'points' | 'color' | 'width' | 'opacity'> }): JSX.Element {
+export function InkShape({
+  obj
+}: {
+  obj: Pick<InkObject, 'points' | 'color' | 'width' | 'opacity' | 'marker'>
+}): JSX.Element {
   const points = obj.points.length === 1 ? [obj.points[0], obj.points[0]] : obj.points
   return (
     <polyline

@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { DialogButton, Modal } from './Modal'
+import { PrintDialog } from './PrintDialog'
 import { SignatureDialog } from './SignatureDialog'
 import {
   closeDialog,
@@ -177,5 +178,7 @@ export function DialogHost(): JSX.Element | null {
       return <SplitDialog key={key} spec={spec} />
     case 'signature':
       return <SignatureDialog key={key} />
+    case 'print':
+      return <PrintDialog key={key} spec={spec} />
   }
 }

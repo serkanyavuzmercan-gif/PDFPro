@@ -38,7 +38,7 @@ export function createMainWindow(): BrowserWindow {
 
   // External links never open inside the app window.
   win.webContents.setWindowOpenHandler(({ url }) => {
-    if (/^https?:\/\//.test(url)) void shell.openExternal(url)
+    if (/^(https?:|mailto:)/.test(url)) void shell.openExternal(url)
     return { action: 'deny' }
   })
   win.webContents.on('will-navigate', (event, url) => {

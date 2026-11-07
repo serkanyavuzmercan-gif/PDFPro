@@ -13,7 +13,6 @@ const FONTS: { id: FontFamily; labelKey: string }[] = [
 ]
 const SIZES = [8, 9, 10, 11, 12, 14, 16, 18, 20, 24, 28, 36, 48, 72]
 const MARKUP_TOOLS: Partial<Record<ToolId, MarkupType>> = {
-  highlight: 'highlight',
   underline: 'underline',
   strikeout: 'strikeout'
 }
@@ -113,10 +112,18 @@ export function PropertiesBar(): JSX.Element | null {
         ? settings.markup[markupType]
         : null
 
+  const markerObject = selected?.kind === 'ink' && selected.marker ? selected : null
+  const marker =
+    markerObject !== null
+      ? { color: markerObject.color, width: markerObject.width, opacity: markerObject.opacity }
+      : tool === 'highlight'
+        ? settings.markup.highlight
+        : null
+
   const ink =
-    selected?.kind === 'ink'
+    selected?.kind === 'ink' && !selected.marker
       ? { color: selected.color, width: selected.width, opacity: selected.opacity }
-      : tool === 'pen'
+      : tool === 'pen' && markerObject === null
         ? settings.ink
         : null
 
@@ -124,7 +131,7 @@ export function PropertiesBar(): JSX.Element | null {
     selected?.kind === 'note' ? selected.color : tool === 'stickyNote' ? settings.note.color : null
 
   const showText = textStyle !== null
-  const empty = !showText && !commentColors && !markup && !ink && !noteColor
+  const empty = !showText && !commentColors && !markup && !marker && !ink && !noteColor
   if (empty) return null
 
   return (
@@ -241,13 +248,62 @@ export function PropertiesBar(): JSX.Element | null {
         </>
       )}
 
+      {marker && (
+        <>
+          <ColorSwatch
+            value={marker.color}
+            title={t('properties.color')}
+            onChange={(color) => {
+              if (markerObject) replaceObject({ ...markerObject, color }, `style-${markerObject.id}`)
+              patchSettings((s) => ({ ...s, markup: { ...s.markup, highlight: { ...s.markup.highlight, color } } }))
+            }}
+          />
+          <label className="flex items-center gap-1 text-[11px] text-ink-muted">
+            {t('properties.width')}
+            <input
+              type="range"
+              min={4}
+              max={40}
+              step={1}
+              value={marker.width}
+              onChange={(e) => {
+                const width = Number(e.target.value)
+                if (markerObject) replaceObject({ ...markerObject, width }, `style-${markerObject.id}`)
+                patchSettings((s) => ({ ...s, markup: { ...s.markup, highlight: { ...s.markup.highlight, width } } }))
+              }}
+              className="w-24 accent-brand"
+            />
+            <span className="w-5 tabular-nums text-ink">{marker.width}</span>
+          </label>
+          <label className="flex items-center gap-1 text-[11px] text-ink-muted">
+            {t('properties.opacity')}
+            <input
+              type="range"
+              min={0.2}
+              max={0.85}
+              step={0.05}
+              value={marker.opacity}
+              onChange={(e) => {
+                const opacity = Number(e.target.value)
+                if (markerObject) replaceObject({ ...markerObject, opacity }, `style-${markerObject.id}`)
+                patchSettings((s) => ({
+                  ...s,
+                  markup: { ...s.markup, highlight: { ...s.markup.highlight, opacity } }
+                }))
+              }}
+              className="w-20 accent-brand"
+            />
+          </label>
+        </>
+      )}
+
       {ink && (
         <>
           <ColorSwatch
             value={ink.color}
             title={t('properties.color')}
             onChange={(color) => {
-              if (selected?.kind === 'ink') replaceObject({ ...selected, color }, `style-${selected.id}`)
+              if (selected?.kind === 'ink' && !selected.marker) replaceObject({ ...selected, color }, `style-${selected.id}`)
               patchSettings((s) => ({ ...s, ink: { ...s.ink, color } }))
             }}
           />
@@ -256,16 +312,19 @@ export function PropertiesBar(): JSX.Element | null {
             <input
               type="range"
               min={0.5}
-              max={12}
+              max={16}
               step={0.5}
               value={ink.width}
               onChange={(e) => {
                 const width = Number(e.target.value)
-                if (selected?.kind === 'ink') replaceObject({ ...selected, width }, `style-${selected.id}`)
+                if (selected?.kind === 'ink' && !selected.marker) {
+                  replaceObject({ ...selected, width }, `style-${selected.id}`)
+                }
                 patchSettings((s) => ({ ...s, ink: { ...s.ink, width } }))
               }}
-              className="w-20 accent-brand"
+              className="w-24 accent-brand"
             />
+            <span className="w-6 tabular-nums text-ink">{ink.width}</span>
           </label>
         </>
       )}

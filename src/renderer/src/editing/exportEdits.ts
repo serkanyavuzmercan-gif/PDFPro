@@ -170,7 +170,22 @@ function drawMarkup(page: PDFPage, info: PageSize, obj: MarkupObject): void {
 }
 
 function drawInk(page: PDFPage, info: PageSize, obj: InkObject): void {
-  if (obj.points.length < 2) return
+  if (obj.points.length === 0) return
+  const blendMode = obj.marker ? BlendMode.Multiply : undefined
+  const start = obj.points[0]
+  const drawn = obj.points.some((p) => Math.hypot(p.x - start.x, p.y - start.y) >= 0.4)
+  if (!drawn) {
+    const center = toUser(info, start.x, start.y)
+    page.drawCircle({
+      x: center.x,
+      y: center.y,
+      size: obj.width / 2,
+      color: color(obj.color),
+      opacity: obj.opacity,
+      blendMode
+    })
+    return
+  }
   const path = obj.points
     .map((p, i) => `${i === 0 ? 'M' : 'L'} ${p.x.toFixed(2)} ${p.y.toFixed(2)}`)
     .join(' ')
@@ -181,7 +196,8 @@ function drawInk(page: PDFPage, info: PageSize, obj: InkObject): void {
     borderColor: color(obj.color),
     borderWidth: obj.width,
     borderOpacity: obj.opacity,
-    borderLineCap: LineCapStyle.Round
+    borderLineCap: LineCapStyle.Round,
+    blendMode
   })
 }
 

@@ -9,6 +9,7 @@ export const IpcChannels = {
   dirPick: 'dir:pick',
   fileWriteInDir: 'file:write-in-dir',
   appPrint: 'app:print',
+  appGetPrinters: 'app:get-printers',
   appGetPendingFile: 'app:get-pending-file',
   appSetDirty: 'app:set-dirty',
   appCloseRequested: 'app:close-requested',
@@ -45,6 +46,16 @@ export interface SavedFile {
 
 export type AppLanguage = 'tr' | 'en'
 
+export interface PrinterInfo {
+  name: string
+  displayName: string
+}
+
+export interface PrintRequest {
+  deviceName?: string
+  copies: number
+}
+
 export interface PdfProApi {
   platform: string
   openFile: () => Promise<Result<OpenedFile>>
@@ -55,7 +66,8 @@ export interface PdfProApi {
   openImage: () => Promise<Result<OpenedImage>>
   pickDirectory: () => Promise<Result<string>>
   writeInDirectory: (dir: string, fileName: string, data: Uint8Array) => Promise<Result<SavedFile>>
-  print: () => Promise<Result<void>>
+  getPrinters: () => Promise<PrinterInfo[]>
+  print: (request: PrintRequest) => Promise<Result<void>>
   getPendingFile: () => Promise<string | null>
   setDirty: (dirty: boolean) => void
   confirmClose: () => void

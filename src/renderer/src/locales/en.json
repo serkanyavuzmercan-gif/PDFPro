@@ -1,7 +1,11 @@
 {
   "app": {
     "name": "PDFPro",
-    "about": "PDFPro - Professional PDF Editor"
+    "about": "PDFPro - Professional PDF Editor",
+    "aboutTitle": "About",
+    "aboutText": "An offline desktop application for opening, editing, and printing documents on your computer.",
+    "developer": "Developer",
+    "rights": "© {{year}} Serkan Yavuz Mercan. All rights reserved."
   },
   "common": {
     "language": "Language",
@@ -138,6 +142,17 @@
       "ranges": "Split by ranges",
       "confirm": "Split",
       "result": "{{pageCount}} pages, {{count}} files"
+    },
+    "print": {
+      "title": "Print preview",
+      "printer": "Printer",
+      "copies": "Copies",
+      "pages": "Pages",
+      "all": "All pages",
+      "current": "Current page",
+      "range": "Page range",
+      "print": "Print",
+      "noPrinter": "No printer found. The default printer will be used."
     },
     "signature": {
       "title": "Draw signature",

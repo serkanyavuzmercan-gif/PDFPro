@@ -6,7 +6,7 @@ import { isDirty, markSaved } from '../editing/history'
 import { useAppStore } from '../store/useAppStore'
 import { useEditStore } from '../store/useEditStore'
 import { loadPdf, PdfLoadError } from './pdfService'
-import { preparePrintPages } from './printService'
+import { mountPrintRoot, renderPrintPages } from './printService'
 
 const store = useAppStore.getState
 const edit = useEditStore.getState
@@ -129,20 +129,33 @@ export async function print(): Promise<void> {
   const bytes = await exportOrReport()
   if (!bytes) return
   store().setLoading(true)
-  let cleanup: (() => void) | null = null
+  let revoke: (() => void) | null = null
+  let unmount: (() => void) | null = null
   let printDoc = doc.pdf
   try {
-    // Edits are printed as they will be saved.
     if (bytes !== doc.bytes) printDoc = (await loadPdf(bytes)).pdf
-    cleanup = await preparePrintPages(printDoc)
+    const rendered = await renderPrintPages(printDoc)
+    revoke = rendered.revoke
+    const printers = await window.api.getPrinters().catch(() => [])
     store().setLoading(false)
-    const result = await window.api.print()
+    const choice = await openDialog({
+      type: 'print',
+      pageCount: rendered.pages.length,
+      currentPage: Math.min(store().currentPage, rendered.pages.length),
+      previews: rendered.pages,
+      printers
+    })
+    if (!choice) return
+    const selected = rendered.pages.filter((page) => choice.pages.includes(page.page))
+    unmount = mountPrintRoot(selected)
+    const result = await window.api.print({ deviceName: choice.deviceName, copies: choice.copies })
     if (!result.ok) reportFailure(result)
   } catch (err) {
     console.error(err)
     store().showNotice({ kind: 'error', key: 'errors.printFailed' })
   } finally {
-    cleanup?.()
+    unmount?.()
+    revoke?.()
     if (printDoc !== doc.pdf) void printDoc.loadingTask.destroy()
     store().setLoading(false)
   }

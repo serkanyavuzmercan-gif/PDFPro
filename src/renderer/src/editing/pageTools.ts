@@ -7,7 +7,6 @@ import { changeObjects } from './history'
 import { newId, type FontFamily, type MarkupObject, type MarkupType, type Rect } from './types'
 
 export const MARKUP_TOOLS: Partial<Record<ToolId, MarkupType>> = {
-  highlight: 'highlight',
   underline: 'underline',
   strikeout: 'strikeout'
 }

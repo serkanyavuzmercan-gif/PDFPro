@@ -7,6 +7,8 @@ import {
   type OpenedFile,
   type OpenedImage,
   type Result,
+  type PrintRequest,
+  type PrinterInfo,
   type SavedFile
 } from '../../shared/ipc'
 
@@ -186,12 +188,38 @@ export function registerFileHandlers(): void {
     }
   )
 
-  ipcMain.handle(IpcChannels.appPrint, async (event): Promise<Result<void>> => {
+  ipcMain.handle(IpcChannels.appGetPrinters, async (event): Promise<PrinterInfo[]> => {
+    const printers = await event.sender.getPrintersAsync()
+    return printers.map((printer) => ({ name: printer.name, displayName: printer.displayName || printer.name }))
+  })
+
+  ipcMain.handle(IpcChannels.appPrint, async (event, request: unknown): Promise<Result<void>> => {
+    const copies = Math.min(99, Math.max(1, Math.round(Number((request as PrintRequest | null)?.copies) || 1)))
+    const requested = (request as PrintRequest | null)?.deviceName
+    const printers = await event.sender.getPrintersAsync()
+    const deviceName =
+      typeof requested === 'string' && printers.some((printer) => printer.name === requested)
+        ? requested
+        : undefined
     return new Promise((done) => {
-      event.sender.print({ printBackground: true }, (success, reason) => {
-        if (success) done({ ok: true, value: undefined })
-        else done(reason === 'cancelled' ? fail('CANCELLED') : fail('UNKNOWN'))
-      })
+      // silent skips the Windows dialog, which cannot show a preview for Electron apps.
+      event.sender.print(
+        {
+          silent: true,
+          printBackground: true,
+          deviceName,
+          copies,
+          margins: { marginType: 'none' },
+          usePrinterDefaultPageSize: true
+        },
+        (success, reason) => {
+          if (success || reason === 'cancelled' || reason === 'canceled') {
+            done(success ? { ok: true, value: undefined } : fail('CANCELLED'))
+          } else {
+            done(fail('UNKNOWN', new Error(reason)))
+          }
+        }
+      )
     })
   })
 }

@@ -8,7 +8,6 @@ import {
   clientDeltaToPage,
   clientToPage,
   distanceToSegment,
-  hexToRgb,
   pointInRect,
   rectFromPoints,
   resizeBox,
@@ -20,7 +19,15 @@ import { objectBox } from '../../editing/layout'
 import { closeNote } from '../../editing/notes'
 import { editPageText, MARKUP_TOOLS } from '../../editing/pageTools'
 import { trackPointer } from '../../editing/pointer'
-import { newId, NOTE_SIZE, type EditObject, type NoteObject, type Point, type Rect } from '../../editing/types'
+import {
+  newId,
+  NOTE_SIZE,
+  type EditObject,
+  type InkObject,
+  type NoteObject,
+  type Point,
+  type Rect
+} from '../../editing/types'
 import { useAppStore, type PageSize, type ToolId } from '../../store/useAppStore'
 import { useEditStore } from '../../store/useEditStore'
 import { DraftEditor } from './DraftEditor'
@@ -44,7 +51,7 @@ interface FileNote {
   color: string
 }
 
-const TEXT_LAYER_TOOLS = new Set<ToolId>(['select', 'editText', 'highlight', 'underline', 'strikeout'])
+const TEXT_LAYER_TOOLS = new Set<ToolId>(['select', 'editText', 'underline', 'strikeout'])
 const OBJECT_TOOLS = new Set<ToolId>(['select', 'editObject', 'editText'])
 
 const TOOL_CURSORS: Partial<Record<ToolId, string>> = {
@@ -53,7 +60,7 @@ const TOOL_CURSORS: Partial<Record<ToolId, string>> = {
   pen: 'crosshair',
   eraser: 'cell',
   stickyNote: 'copy',
-  highlight: 'text',
+  highlight: 'crosshair',
   underline: 'text',
   strikeout: 'text'
 }
@@ -183,7 +190,9 @@ export function PageLayers({ pdf, pageIndex, size, zoom, visible }: PageLayersPr
   useFontsVersion()
   const frameRef = useRef<HTMLDivElement>(null)
   const [preview, setPreview] = useState<EditObject | null>(null)
-  const [livePath, setLivePath] = useState<Point[] | null>(null)
+  const [liveStroke, setLiveStroke] = useState<Pick<InkObject, 'points' | 'color' | 'width' | 'opacity' | 'marker'> | null>(
+    null
+  )
   const [liveRect, setLiveRect] = useState<Rect | null>(null)
   const [openFileNote, setOpenFileNote] = useState<string | null>(null)
   const fileNotes = useFileNotes(pdf, pageIndex, size, visible)
@@ -207,6 +216,29 @@ export function PageLayers({ pdf, pageIndex, size, zoom, visible }: PageLayersPr
     return wrapper ? clientToPage(clientX, clientY, wrapper, size, zoom) : { x: 0, y: 0 }
   }
   const toPageDelta = (dx: number, dy: number): Point => clientDeltaToPage(dx, dy, size.rotation, zoom)
+
+  /** Freehand stroke. A click with no movement still leaves a round dot. */
+  const drawStroke = (
+    e: ReactPointerEvent,
+    style: Pick<InkObject, 'color' | 'width' | 'opacity' | 'marker'>
+  ): void => {
+    e.preventDefault()
+    const points = [toPage(e.clientX, e.clientY)]
+    setLiveStroke({ points, ...style })
+    trackPointer(e, {
+      onMove: (_dx, _dy, ev) => {
+        const next = toPage(ev.clientX, ev.clientY)
+        const last = points[points.length - 1]
+        if (Math.hypot(next.x - last.x, next.y - last.y) < 0.35) return
+        points.push(next)
+        setLiveStroke({ points: [...points], ...style })
+      },
+      onUp: () => {
+        setLiveStroke(null)
+        addObject({ id: newId(), kind: 'ink', pageIndex, points, ...style }, false)
+      }
+    })
+  }
 
   /** Drags out a rectangle on the page; resolves with it on release. */
   const dragRect = (e: ReactPointerEvent, onDone: (rect: Rect, moved: boolean) => void): void => {
@@ -281,22 +313,12 @@ export function PageLayers({ pdf, pageIndex, size, zoom, visible }: PageLayersPr
         useEditStore.getState().setOpenNote(note.id)
         return
       }
-      case 'pen': {
-        e.preventDefault()
-        const points = [p]
-        setLivePath(points)
-        trackPointer(e, {
-          onMove: (_dx, _dy, ev) => {
-            points.push(toPage(ev.clientX, ev.clientY))
-            setLivePath([...points])
-          },
-          onUp: () => {
-            setLivePath(null)
-            addObject({ id: newId(), kind: 'ink', pageIndex, points, ...settings.ink }, false)
-          }
-        })
+      case 'pen':
+        drawStroke(e, settings.ink)
         return
-      }
+      case 'highlight':
+        drawStroke(e, { ...settings.markup.highlight, marker: true })
+        return
       case 'eraser': {
         e.preventDefault()
         const key = `erase-${newId()}`
@@ -304,7 +326,6 @@ export function PageLayers({ pdf, pageIndex, size, zoom, visible }: PageLayersPr
         trackPointer(e, { onMove: (_dx, _dy, ev) => eraseAt(toPage(ev.clientX, ev.clientY), key) })
         return
       }
-      case 'highlight':
       case 'underline':
       case 'strikeout': {
         const target = e.target as HTMLElement
@@ -396,12 +417,14 @@ export function PageLayers({ pdf, pageIndex, size, zoom, visible }: PageLayersPr
     transform: size.rotation ? `rotate(${size.rotation}deg)` : undefined,
     transformOrigin: 'center',
     cursor: TOOL_CURSORS[tool],
+    touchAction: tool === 'pen' || tool === 'highlight' || tool === 'eraser' ? 'none' : undefined,
     '--total-scale-factor': zoom,
     '--scale-round-x': '1px',
     '--scale-round-y': '1px'
   } as CSSProperties
 
   const svgObjects = objects.filter((o) => o.kind === 'markup' || o.kind === 'ink')
+  const markerObjects = svgObjects.filter((o): o is InkObject => o.kind === 'ink' && o.marker === true)
   const boxObjects = objects.filter((o) => o.kind === 'text' || o.kind === 'comment' || o.kind === 'image')
   const notes = objects.filter((o): o is NoteObject => o.kind === 'note')
   const openNote = notes.find((n) => n.id === openNoteId)
@@ -430,6 +453,18 @@ export function PageLayers({ pdf, pageIndex, size, zoom, visible }: PageLayersPr
         className="pointer-events-none absolute inset-0 size-full overflow-visible"
         viewBox={`0 0 ${size.baseWidth} ${size.baseHeight}`}
         preserveAspectRatio="none"
+        style={{ zIndex: 4, mixBlendMode: 'multiply' }}
+      >
+        {markerObjects.map((o) => (
+          <InkShape key={o.id} obj={o} />
+        ))}
+        {liveStroke?.marker && <InkShape obj={liveStroke} />}
+      </svg>
+
+      <svg
+        className="pointer-events-none absolute inset-0 size-full overflow-visible"
+        viewBox={`0 0 ${size.baseWidth} ${size.baseHeight}`}
+        preserveAspectRatio="none"
         style={{ zIndex: 5 }}
       >
         {svgObjects.map((o) => (
@@ -450,27 +485,26 @@ export function PageLayers({ pdf, pageIndex, size, zoom, visible }: PageLayersPr
                 ))}
               </>
             ) : (
-              o.kind === 'ink' && (
+              o.kind === 'ink' &&
+              (o.marker ? (
+                <InkShape obj={{ ...o, color: 'transparent', width: Math.max(o.width, 8 / zoom), opacity: 1 }} />
+              ) : (
                 <>
                   <InkShape obj={o} />
                   <InkShape obj={{ ...o, color: 'transparent', width: Math.max(o.width, 8 / zoom), opacity: 1 }} />
                 </>
-              )
+              ))
             )}
           </g>
         ))}
-        {livePath && <InkShape obj={{ points: livePath, ...useEditStore.getState().settings.ink }} />}
+        {liveStroke && !liveStroke.marker && <InkShape obj={liveStroke} />}
         {liveRect && (
           <rect
             x={liveRect.x}
             y={liveRect.y}
             width={liveRect.width}
             height={liveRect.height}
-            fill={
-              tool === 'highlight'
-                ? hexWithAlpha(useEditStore.getState().settings.markup.highlight.color, 0.35)
-                : 'rgb(215 25 32 / 0.06)'
-            }
+            fill="rgb(215 25 32 / 0.06)"
             stroke="#d71920"
             strokeWidth={1 / zoom}
             strokeDasharray={`${4 / zoom} ${3 / zoom}`}
@@ -574,11 +608,6 @@ export function PageLayers({ pdf, pageIndex, size, zoom, visible }: PageLayersPr
         ))}
     </div>
   )
-}
-
-function hexWithAlpha(hex: string, alpha: number): string {
-  const { r, g, b } = hexToRgb(hex)
-  return `rgb(${r * 255} ${g * 255} ${b * 255} / ${alpha})`
 }
 
 const CORNERS: Point[] = [

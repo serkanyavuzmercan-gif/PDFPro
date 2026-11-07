@@ -1,7 +1,11 @@
 {
   "app": {
     "name": "PDFPro",
-    "about": "PDFPro - Profesyonel PDF Düzenleyici"
+    "about": "PDFPro - Profesyonel PDF Düzenleyici",
+    "aboutTitle": "Hakkında",
+    "aboutText": "Belgelerinizi bilgisayarınızda açmak, düzenlemek ve yazdırmak için tasarlanmış çevrimdışı bir masaüstü uygulamasıdır.",
+    "developer": "Geliştirici",
+    "rights": "© {{year}} Serkan Yavuz Mercan. Tüm hakları saklıdır."
   },
   "common": {
     "language": "Dil",
@@ -138,6 +142,17 @@
       "ranges": "Aralıklarla böl",
       "confirm": "Böl",
       "result": "{{pageCount}} sayfa, {{count}} dosya"
+    },
+    "print": {
+      "title": "Yazdırma önizlemesi",
+      "printer": "Yazıcı",
+      "copies": "Kopya sayısı",
+      "pages": "Sayfalar",
+      "all": "Tüm sayfalar",
+      "current": "Geçerli sayfa",
+      "range": "Sayfa aralığı",
+      "print": "Yazdır",
+      "noPrinter": "Yazıcı bulunamadı. Varsayılan yazıcı kullanılacak."
     },
     "signature": {
       "title": "İmza çiz",

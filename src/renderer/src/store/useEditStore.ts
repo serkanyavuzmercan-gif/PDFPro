@@ -1,11 +1,5 @@
 import { create } from 'zustand'
-import type {
-  EditObject,
-  MarkupType,
-  Rect,
-  TextAlign,
-  TextStyle
-} from '../editing/types'
+import type { EditObject, Rect, TextAlign, TextStyle } from '../editing/types'
 
 export interface Snapshot {
   bytes: Uint8Array | null
@@ -34,7 +28,11 @@ export interface TextDraft {
 export interface ToolSettings {
   text: TextStyle
   comment: { fill: string; border: string }
-  markup: Record<MarkupType, { color: string; opacity: number }>
+  markup: {
+    highlight: { color: string; opacity: number; width: number }
+    underline: { color: string; opacity: number }
+    strikeout: { color: string; opacity: number }
+  }
   ink: { color: string; width: number; opacity: number }
   note: { color: string }
 }
@@ -47,7 +45,7 @@ const defaultSettings: ToolSettings = {
   text: { font: 'sans', size: 14, color: '#1f2937', bold: false, italic: false, align: 'left' as TextAlign },
   comment: { fill: '#fff8c5', border: '#d4a72c' },
   markup: {
-    highlight: { color: '#ffd400', opacity: 0.45 },
+    highlight: { color: '#ffd400', opacity: 0.55, width: 18 },
     underline: { color: '#2563eb', opacity: 1 },
     strikeout: { color: '#d71920', opacity: 1 }
   },

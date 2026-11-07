@@ -82,6 +82,8 @@ export interface InkObject extends ObjectBase {
   color: string
   width: number
   opacity: number
+  /** Wide, see-through stroke drawn like a highlighter rather than a pen. */
+  marker?: boolean
 }
 
 export interface NoteObject extends ObjectBase {

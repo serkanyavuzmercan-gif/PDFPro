@@ -1,5 +1,7 @@
+import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import logo from '../../assets/logo.png'
+import { AboutDialog } from '../dialogs/AboutDialog'
 import { isDirty, useBothStores } from '../../editing/history'
 import { LanguageToggle } from './LanguageToggle'
 import { QuickAccessBar } from './QuickAccessBar'
@@ -13,12 +15,21 @@ export function TitleBar(): JSX.Element {
   const { t } = useTranslation()
   const fileName = useBothStores((s) => s.document?.name)
   const dirty = useBothStores((s, e) => isDirty(s, e))
+  const [aboutOpen, setAboutOpen] = useState(false)
 
   return (
     <header
       className={`drag-region flex h-9 shrink-0 items-center gap-2 border-b border-chrome-border bg-white ${leftInset} ${rightInset}`}
     >
-      <img src={logo} alt="" className="h-6 w-6 shrink-0" draggable={false} />
+      <button
+        type="button"
+        title={t('app.aboutTitle')}
+        aria-label={t('app.aboutTitle')}
+        onClick={() => setAboutOpen(true)}
+        className="no-drag rounded p-0.5 hover:bg-chrome"
+      >
+        <img src={logo} alt="" className="h-6 w-6" draggable={false} />
+      </button>
       <span className="text-[13px] font-bold tracking-tight text-brand">{t('app.name')}</span>
       <span className="mx-1 h-4 w-px bg-chrome-border" />
       <QuickAccessBar />
@@ -26,6 +37,7 @@ export function TitleBar(): JSX.Element {
         {fileName ? `${dirty ? '* ' : ''}${fileName} - ${t('app.name')}` : t('app.about')}
       </div>
       <LanguageToggle />
+      {aboutOpen && <AboutDialog onClose={() => setAboutOpen(false)} />}
     </header>
   )
 }

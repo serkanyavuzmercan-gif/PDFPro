@@ -19,7 +19,8 @@ const api: PdfProApi = {
   pickDirectory: () => ipcRenderer.invoke(IpcChannels.dirPick),
   writeInDirectory: (dir, fileName, data) =>
     ipcRenderer.invoke(IpcChannels.fileWriteInDir, dir, fileName, data),
-  print: () => ipcRenderer.invoke(IpcChannels.appPrint),
+  getPrinters: () => ipcRenderer.invoke(IpcChannels.appGetPrinters),
+  print: (request) => ipcRenderer.invoke(IpcChannels.appPrint, request),
   getPendingFile: () => ipcRenderer.invoke(IpcChannels.appGetPendingFile),
   setDirty: (dirty) => ipcRenderer.send(IpcChannels.appSetDirty, dirty),
   confirmClose: () => ipcRenderer.send(IpcChannels.appConfirmClose),

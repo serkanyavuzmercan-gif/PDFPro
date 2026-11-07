@@ -1,4 +1,5 @@
 import { useEffect, type ReactNode } from 'react'
+import { createPortal } from 'react-dom'
 import { X } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 
@@ -24,8 +25,8 @@ export function Modal({ title, onCancel, children, footer, width = 420 }: ModalP
     return () => window.removeEventListener('keydown', onKeyDown, true)
   }, [onCancel])
 
-  return (
-    <div className="fixed inset-0 z-[900] flex items-center justify-center bg-black/30" role="presentation">
+  return createPortal(
+    <div className="no-drag fixed inset-0 z-[900] flex items-center justify-center bg-black/30" role="presentation">
       <div
         role="dialog"
         aria-modal="true"
@@ -47,7 +48,8 @@ export function Modal({ title, onCancel, children, footer, width = 420 }: ModalP
         <div className="overflow-y-auto px-4 py-3 text-[12px] text-ink">{children}</div>
         <div className="flex justify-end gap-2 border-t border-chrome-border px-4 py-2.5">{footer}</div>
       </div>
-    </div>
+    </div>,
+    document.body
   )
 }
 

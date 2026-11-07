@@ -1,5 +1,12 @@
 import { create } from 'zustand'
 
+export interface PrintDialogResult {
+  deviceName?: string
+  copies: number
+  /** 1-based page numbers to print. */
+  pages: number[]
+}
+
 export interface SignatureResult {
   bytes: Uint8Array
   src: string
@@ -20,6 +27,13 @@ export type DialogSpec =
   | { type: 'pageRange'; titleKey: string; confirmKey: string; initial: string; pageCount: number }
   | { type: 'split'; pageCount: number }
   | { type: 'signature' }
+  | {
+      type: 'print'
+      pageCount: number
+      currentPage: number
+      previews: { page: number; src: string }[]
+      printers: { name: string; displayName: string }[]
+    }
 
 export type DialogResult<S extends DialogSpec> = S extends { type: 'confirm' }
   ? boolean
@@ -29,7 +43,11 @@ export type DialogResult<S extends DialogSpec> = S extends { type: 'confirm' }
       ? number[] | null
       : S extends { type: 'split' }
         ? number[][] | null
-        : SignatureResult | null
+        : S extends { type: 'signature' }
+          ? SignatureResult | null
+          : S extends { type: 'print' }
+            ? PrintDialogResult | null
+            : never
 
 interface DialogState {
   current: { id: number; spec: DialogSpec; resolve: (value: unknown) => void } | null
