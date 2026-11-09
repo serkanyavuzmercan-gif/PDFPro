@@ -11,23 +11,85 @@ import monoRegular from 'dejavu-fonts-ttf/ttf/DejaVuSansMono.ttf?url'
 import monoBold from 'dejavu-fonts-ttf/ttf/DejaVuSansMono-Bold.ttf?url'
 import monoItalic from 'dejavu-fonts-ttf/ttf/DejaVuSansMono-Oblique.ttf?url'
 import monoBoldItalic from 'dejavu-fonts-ttf/ttf/DejaVuSansMono-BoldOblique.ttf?url'
+import { SYSTEM_FONT_IDS, type SystemFontId } from '../../../shared/ipc'
 import { LINE_HEIGHT, type FontFamily, type TextStyle } from './types'
 
 /** [regular, bold, italic, bold italic] */
-const FONT_FILES: Record<FontFamily, [string, string, string, string]> = {
+const BUNDLED_FILES: Record<'sans' | 'serif' | 'mono', [string, string, string, string]> = {
   sans: [sansRegular, sansBold, sansItalic, sansBoldItalic],
   serif: [serifRegular, serifBold, serifItalic, serifBoldItalic],
   mono: [monoRegular, monoBold, monoItalic, monoBoldItalic]
 }
 
-/** The same TTF files are used on screen and embedded on save, so wrapping matches. */
+const BUNDLED_LABELS: Record<'sans' | 'serif' | 'mono', string> = {
+  sans: 'DejaVu Sans',
+  serif: 'DejaVu Serif',
+  mono: 'DejaVu Sans Mono'
+}
+
+const SYSTEM_LABELS: Record<SystemFontId, string> = {
+  arial: 'Arial',
+  times: 'Times New Roman',
+  calibri: 'Calibri',
+  georgia: 'Georgia',
+  verdana: 'Verdana',
+  courier: 'Courier New',
+  trebuchet: 'Trebuchet MS',
+  segoe: 'Segoe UI',
+  consolas: 'Consolas',
+  palatino: 'Palatino Linotype',
+  candara: 'Candara',
+  constantia: 'Constantia',
+  corbel: 'Corbel'
+}
+
+/** Used when a chosen system font cannot be read, so save still embeds a face. */
+const FALLBACK_FAMILY: Record<SystemFontId, 'sans' | 'serif' | 'mono'> = {
+  arial: 'sans',
+  calibri: 'sans',
+  verdana: 'sans',
+  trebuchet: 'sans',
+  segoe: 'sans',
+  candara: 'sans',
+  corbel: 'sans',
+  times: 'serif',
+  georgia: 'serif',
+  palatino: 'serif',
+  constantia: 'serif',
+  courier: 'mono',
+  consolas: 'mono'
+}
+
+export function fontLabel(font: FontFamily): string {
+  if (font === 'sans' || font === 'serif' || font === 'mono') return BUNDLED_LABELS[font]
+  return SYSTEM_LABELS[font]
+}
+
+let installedSystemFonts: SystemFontId[] = []
+
+/** Bundled faces first, then the system faces that were found on this computer. */
+export function fontChoices(): { id: FontFamily; label: string }[] {
+  const installed = new Set(installedSystemFonts)
+  return [
+    ...(Object.keys(BUNDLED_LABELS) as ('sans' | 'serif' | 'mono')[]).map((id) => ({
+      id,
+      label: BUNDLED_LABELS[id]
+    })),
+    ...SYSTEM_FONT_IDS.filter((id) => installed.has(id)).map((id) => ({ id, label: SYSTEM_LABELS[id] }))
+  ]
+}
+
+/** The same files are used on screen and embedded on save, so wrapping matches. */
 export function cssFontFamily(font: FontFamily): string {
   return `"PDFPro ${font}"`
 }
 
-function fontUrl(style: Pick<TextStyle, 'font' | 'bold' | 'italic'>): string {
-  const index = (style.bold ? 1 : 0) + (style.italic ? 2 : 0)
-  return FONT_FILES[style.font][index]
+function variantOf(style: Pick<TextStyle, 'bold' | 'italic'>): 0 | 1 | 2 | 3 {
+  return ((style.bold ? 1 : 0) + (style.italic ? 2 : 0)) as 0 | 1 | 2 | 3
+}
+
+function isBundled(font: FontFamily): font is 'sans' | 'serif' | 'mono' {
+  return font === 'sans' || font === 'serif' || font === 'mono'
 }
 
 export function cssFont(style: TextStyle, size: number): string {
@@ -37,24 +99,50 @@ export function cssFont(style: TextStyle, size: number): string {
 let fontsVersion = 0
 const listeners = new Set<() => void>()
 
+function notifyFonts(): void {
+  fontsVersion += 1
+  listeners.forEach((listener) => listener())
+}
+
+async function loadFace(family: FontFamily, bytes: ArrayBuffer, style: Pick<TextStyle, 'bold' | 'italic'>): Promise<void> {
+  const face = new FontFace(`PDFPro ${family}`, bytes, {
+    weight: style.bold ? '700' : '400',
+    style: style.italic ? 'italic' : 'normal'
+  })
+  document.fonts.add(face)
+  await face.load()
+}
+
 export function registerFonts(): void {
-  const faces: Promise<FontFace>[] = []
-  for (const font of Object.keys(FONT_FILES) as FontFamily[]) {
+  const faces: Promise<unknown>[] = []
+  for (const font of Object.keys(BUNDLED_FILES) as ('sans' | 'serif' | 'mono')[]) {
     for (const bold of [false, true]) {
       for (const italic of [false, true]) {
-        const face = new FontFace(`PDFPro ${font}`, `url(${fontUrl({ font, bold, italic })})`, {
-          weight: bold ? '700' : '400',
-          style: italic ? 'italic' : 'normal'
-        })
-        document.fonts.add(face)
-        faces.push(face.load())
+        const style = { font, bold, italic }
+        faces.push(getFontBytes(style).then((bytes) => loadFace(font, bytes, style)))
       }
     }
   }
-  void Promise.allSettled(faces).then(() => {
-    fontsVersion += 1
-    listeners.forEach((l) => l())
-  })
+  void Promise.allSettled(faces).then(() => notifyFonts())
+
+  void window.api
+    .listSystemFonts()
+    .then(async (ids) => {
+      const known = new Set<string>(SYSTEM_FONT_IDS)
+      installedSystemFonts = ids.filter((id): id is SystemFontId => known.has(id))
+      const loads: Promise<unknown>[] = []
+      for (const font of installedSystemFonts) {
+        for (const bold of [false, true]) {
+          for (const italic of [false, true]) {
+            const style = { font, bold, italic }
+            loads.push(getFontBytes(style).then((bytes) => loadFace(font, bytes, style)))
+          }
+        }
+      }
+      await Promise.allSettled(loads)
+      notifyFonts()
+    })
+    .catch(() => undefined)
 }
 
 /** Re-renders once the embedded fonts finish loading, so text is re-measured. */
@@ -72,16 +160,36 @@ export function useFontsVersion(): number {
 
 const fontBytesCache = new Map<string, Promise<ArrayBuffer>>()
 
+function cacheKey(font: FontFamily, style: Pick<TextStyle, 'bold' | 'italic'>): string {
+  return `${font}:${variantOf(style)}`
+}
+
+function toArrayBuffer(data: Uint8Array): ArrayBuffer {
+  return data.buffer.slice(data.byteOffset, data.byteOffset + data.byteLength) as ArrayBuffer
+}
+
 export function getFontBytes(style: Pick<TextStyle, 'font' | 'bold' | 'italic'>): Promise<ArrayBuffer> {
-  const url = fontUrl(style)
-  let bytes = fontBytesCache.get(url)
-  if (!bytes) {
-    bytes = fetch(url).then((r) => {
-      if (!r.ok) throw new Error(`Font load failed: ${url}`)
-      return r.arrayBuffer()
+  const key = cacheKey(style.font, style)
+  const cached = fontBytesCache.get(key)
+  if (cached) return cached
+  let bytes: Promise<ArrayBuffer>
+  if (isBundled(style.font)) {
+    const font = style.font
+    bytes = fetch(BUNDLED_FILES[font][variantOf(style)]).then((response) => {
+      if (!response.ok) throw new Error(`Font load failed: ${font}`)
+      return response.arrayBuffer()
     })
-    fontBytesCache.set(url, bytes)
+  } else {
+    const font = style.font
+    bytes = window.api
+      .readSystemFont(font, variantOf(style))
+      .then((data) => {
+        if (data && data.byteLength > 0) return toArrayBuffer(data)
+        return getFontBytes({ ...style, font: FALLBACK_FAMILY[font] })
+      })
+      .catch(() => getFontBytes({ ...style, font: FALLBACK_FAMILY[font] }))
   }
+  fontBytesCache.set(key, bytes)
   return bytes
 }
 

@@ -111,6 +111,7 @@
     "fill": "Dolgu",
     "border": "Kenarlık",
     "width": "Kalınlık",
+    "move": "Taşı",
     "opacity": "Saydamlık",
     "note": "Not",
     "notePlaceholder": "Not yazın..."
@@ -158,8 +159,9 @@
       "title": "İmza çiz",
       "place": "Yerleştir",
       "clear": "Temizle",
+      "upload": "Resim yükle",
       "useLast": "Son imzayı kullan",
-      "hint": "Fare veya kalemle imzanızı çizin."
+      "hint": "Fare veya kalemle çizin ya da bilgisayardan resim yükleyin. Şeffaf bir PNG belgede de şeffaf kalır."
     }
   },
   "sidebar": {

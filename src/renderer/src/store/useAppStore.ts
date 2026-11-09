@@ -1,5 +1,6 @@
 import { create } from 'zustand'
 import type { PDFDocumentProxy } from 'pdfjs-dist'
+import type { EditSession } from './useEditStore'
 
 export type RibbonTabId = 'file' | 'home' | 'edit' | 'view' | 'comment' | 'pages' | 'protect'
 export type ToolId =
@@ -40,6 +41,24 @@ export interface OpenDocument {
   pageSizes: PageSize[]
 }
 
+/** Zoom and page position remembered while another document is in front. */
+export interface DocumentView {
+  zoom: number
+  zoomMode: ZoomMode
+  scrollMode: ScrollMode
+  currentPage: number
+  selectedPages: number[]
+  selectionAnchor: number | null
+}
+
+/** A document that stays open behind the one on screen. */
+export interface DocumentSession {
+  id: string
+  document: OpenDocument
+  view: DocumentView
+  edit: EditSession
+}
+
 export type Notice = { kind: 'error' | 'info'; key: string; params?: Record<string, string> }
 
 export const MIN_ZOOM = 0.1
@@ -57,6 +76,10 @@ export interface AppState {
   sidebarOpen: boolean
   sidebarPanel: SidebarPanel
   document: OpenDocument | null
+  /** Open document tabs, left to right. The active one is not repeated in `parked`. */
+  documentOrder: string[]
+  activeDocumentId: string | null
+  parked: DocumentSession[]
   loading: boolean
   currentPage: number
   /** 1-based pages selected in the thumbnail panel. */
@@ -97,6 +120,9 @@ export const useAppStore = create<AppState>((set, get) => ({
   sidebarOpen: true,
   sidebarPanel: 'thumbnails',
   document: null,
+  documentOrder: [],
+  activeDocumentId: null,
+  parked: [],
   loading: false,
   currentPage: 1,
   selectedPages: [],
@@ -125,7 +151,8 @@ export const useAppStore = create<AppState>((set, get) => ({
   setLoading: (loading) => set({ loading }),
   setDocument: (document) => {
     const previous = get().document
-    if (previous && previous.pdf !== document?.pdf) void previous.pdf.loadingTask.destroy()
+    const kept = previous ? get().parked.some((session) => session.document.pdf === previous.pdf) : false
+    if (previous && previous.pdf !== document?.pdf && !kept) void previous.pdf.loadingTask.destroy()
     set({
       document,
       currentPage: 1,

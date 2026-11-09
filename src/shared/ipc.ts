@@ -13,8 +13,29 @@ export const IpcChannels = {
   appGetPendingFile: 'app:get-pending-file',
   appSetDirty: 'app:set-dirty',
   appCloseRequested: 'app:close-requested',
-  appConfirmClose: 'app:confirm-close'
+  appConfirmClose: 'app:confirm-close',
+  fontsList: 'fonts:list',
+  fontsRead: 'fonts:read'
 } as const
+
+/** Document fonts read from the OS font folder. The installer does not ship these files. */
+export const SYSTEM_FONT_IDS = [
+  'arial',
+  'times',
+  'calibri',
+  'georgia',
+  'verdana',
+  'courier',
+  'trebuchet',
+  'segoe',
+  'consolas',
+  'palatino',
+  'candara',
+  'constantia',
+  'corbel'
+] as const
+
+export type SystemFontId = (typeof SYSTEM_FONT_IDS)[number]
 
 export type FileErrorCode =
   | 'CANCELLED'
@@ -68,6 +89,8 @@ export interface PdfProApi {
   writeInDirectory: (dir: string, fileName: string, data: Uint8Array) => Promise<Result<SavedFile>>
   getPrinters: () => Promise<PrinterInfo[]>
   print: (request: PrintRequest) => Promise<Result<void>>
+  listSystemFonts: () => Promise<SystemFontId[]>
+  readSystemFont: (id: SystemFontId, variant: number) => Promise<Uint8Array | null>
   getPendingFile: () => Promise<string | null>
   setDirty: (dirty: boolean) => void
   confirmClose: () => void

@@ -16,7 +16,9 @@ export interface Rect {
   height: number
 }
 
-export type FontFamily = 'sans' | 'serif' | 'mono'
+import type { SystemFontId } from '../../../shared/ipc'
+
+export type FontFamily = 'sans' | 'serif' | 'mono' | SystemFontId
 export type TextAlign = 'left' | 'center' | 'right'
 export type MarkupType = 'highlight' | 'underline' | 'strikeout'
 
@@ -74,6 +76,8 @@ export interface MarkupObject extends ObjectBase {
   rects: Rect[]
   color: string
   opacity: number
+  /** Point size of an underline or strikeout. Older marks omit it and keep the previous size. */
+  strokeWidth?: number
 }
 
 export interface InkObject extends ObjectBase {

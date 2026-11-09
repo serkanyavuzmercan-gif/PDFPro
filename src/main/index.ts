@@ -2,6 +2,7 @@ import { app, BrowserWindow, ipcMain } from 'electron'
 import { IpcChannels } from '../shared/ipc'
 import { attachCloseGuard, registerCloseGuardHandlers } from './closeGuard'
 import { approvePath, registerFileHandlers } from './ipc/fileHandlers'
+import { registerFontHandlers } from './ipc/fontHandlers'
 import { setupApplicationMenu } from './menu'
 import { handleAppScheme, registerAppScheme } from './protocol'
 import { createMainWindow } from './window'
@@ -59,6 +60,7 @@ if (!gotLock) {
     setupApplicationMenu()
     handleAppScheme()
     registerFileHandlers()
+    registerFontHandlers()
     registerCloseGuardHandlers()
     ipcMain.handle(IpcChannels.appGetPendingFile, () => {
       const file = pendingFile

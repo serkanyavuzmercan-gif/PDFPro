@@ -1,11 +1,25 @@
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, type CSSProperties, type PointerEvent as ReactPointerEvent } from 'react'
+import { useTranslation } from 'react-i18next'
 import { commitDraft } from '../../editing/draft'
+import { clientDeltaToPage } from '../../editing/geometry'
 import { textLikeHeight } from '../../editing/layout'
+import { trackPointer } from '../../editing/pointer'
 import { COMMENT_PADDING } from '../../editing/types'
 import { useEditStore, type TextDraft } from '../../store/useEditStore'
 import { boxStyle, textCss } from './ObjectViews'
 
-export function DraftEditor({ draft, zoom }: { draft: TextDraft; zoom: number }): JSX.Element {
+const GRIP = 8
+
+export function DraftEditor({
+  draft,
+  zoom,
+  pageRotation
+}: {
+  draft: TextDraft
+  zoom: number
+  pageRotation: number
+}): JSX.Element {
+  const { t } = useTranslation()
   const ref = useRef<HTMLTextAreaElement>(null)
   const padding = draft.kind === 'comment' ? COMMENT_PADDING : 0
   const height = textLikeHeight(draft.kind, draft.text, draft.style, draft.width)
@@ -15,7 +29,32 @@ export function DraftEditor({ draft, zoom }: { draft: TextDraft; zoom: number })
     if (!el) return
     el.focus({ preventScroll: true })
     el.setSelectionRange(el.value.length, el.value.length)
-  }, [draft.id, draft.pageIndex, draft.x, draft.y])
+  }, [draft.token])
+
+  const onGripPointerDown = (event: ReactPointerEvent): void => {
+    if (event.button !== 0) return
+    event.stopPropagation()
+    event.preventDefault()
+    const origin = { x: draft.x, y: draft.y }
+    const field = ref.current
+    const caret = field ? { start: field.selectionStart, end: field.selectionEnd } : null
+    trackPointer(event, {
+      onMove: (dx, dy) => {
+        const delta = clientDeltaToPage(dx, dy, pageRotation, zoom)
+        useEditStore.getState().updateDraft({ x: origin.x + delta.x, y: origin.y + delta.y })
+      },
+      onUp: () => {
+        const node = ref.current
+        if (!node) return
+        node.focus({ preventScroll: true })
+        if (caret) node.setSelectionRange(caret.start, caret.end)
+      }
+    })
+  }
+
+  const grip = (style: CSSProperties): JSX.Element => (
+    <div data-draft title={t('properties.move')} onPointerDown={onGripPointerDown} style={{ position: 'absolute', cursor: 'move', ...style }} />
+  )
 
   return (
     <>
@@ -44,6 +83,10 @@ export function DraftEditor({ draft, zoom }: { draft: TextDraft; zoom: number })
           zIndex: 30
         }}
       >
+        {grip({ left: -GRIP, right: -GRIP, top: -GRIP, height: GRIP })}
+        {grip({ left: -GRIP, right: -GRIP, bottom: -GRIP, height: GRIP })}
+        {grip({ top: 0, bottom: 0, left: -GRIP, width: GRIP })}
+        {grip({ top: 0, bottom: 0, right: -GRIP, width: GRIP })}
         <textarea
           ref={ref}
           value={draft.text}
@@ -56,7 +99,7 @@ export function DraftEditor({ draft, zoom }: { draft: TextDraft; zoom: number })
               commitDraft()
             }
           }}
-          className="block size-full resize-none overflow-hidden border-0 bg-transparent p-0 outline-none"
+          className="relative z-[1] block size-full resize-none overflow-hidden border-0 bg-transparent p-0 outline-none"
           style={{
             ...textCss(draft.style, zoom),
             whiteSpace: 'pre-wrap',

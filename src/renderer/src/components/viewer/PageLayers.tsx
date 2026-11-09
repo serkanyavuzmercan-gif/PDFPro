@@ -338,7 +338,16 @@ export function PageLayers({ pdf, pageIndex, size, zoom, visible }: PageLayersPr
           if (!moved || rect.width < 2 || rect.height < 2) return
           const style = useEditStore.getState().settings.markup[type]
           addObject(
-            { id: newId(), kind: 'markup', pageIndex, type, rects: [rect], color: style.color, opacity: style.opacity },
+            {
+              id: newId(),
+              kind: 'markup',
+              pageIndex,
+              type,
+              rects: [rect],
+              color: style.color,
+              opacity: style.opacity,
+              strokeWidth: style.width
+            },
             false
           )
         })
@@ -592,7 +601,9 @@ export function PageLayers({ pdf, pageIndex, size, zoom, visible }: PageLayersPr
         />
       )}
 
-      {draft && draft.pageIndex === pageIndex && <DraftEditor draft={draft} zoom={zoom} />}
+      {draft && draft.pageIndex === pageIndex && (
+        <DraftEditor draft={draft} zoom={zoom} pageRotation={size.rotation} />
+      )}
 
       {openNote && <NotePopup note={openNote} zoom={zoom} pageRotation={size.rotation} />}
       {fileNotes

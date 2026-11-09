@@ -10,6 +10,7 @@ export interface PrintDialogResult {
 export interface SignatureResult {
   bytes: Uint8Array
   src: string
+  format: 'png' | 'jpg'
   width: number
   height: number
 }

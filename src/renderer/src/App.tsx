@@ -2,6 +2,7 @@ import { useEffect } from 'react'
 import { LoaderCircle } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { DialogHost } from './components/dialogs/DialogHost'
+import { DocumentTabs } from './components/layout/DocumentTabs'
 import { NoticeBar } from './components/layout/NoticeBar'
 import { PropertiesBar } from './components/layout/PropertiesBar'
 import { Ribbon } from './components/layout/Ribbon'
@@ -10,9 +11,8 @@ import { StatusBar } from './components/layout/StatusBar'
 import { TitleBar } from './components/layout/TitleBar'
 import { EmptyState } from './components/viewer/EmptyState'
 import { PdfViewer } from './components/viewer/PdfViewer'
-import { isDirty } from './editing/history'
 import { registerFonts } from './editing/fonts'
-import { confirmUnsaved, openFromPath } from './services/fileService'
+import { anyDocumentDirty, confirmEveryUnsaved, openFromPath } from './services/fileService'
 import { useShortcuts } from './shortcuts/useShortcuts'
 import { useAppStore } from './store/useAppStore'
 import { useEditStore } from './store/useEditStore'
@@ -29,7 +29,7 @@ function useExternalFileOpening(): void {
 function useUnsavedCloseGuard(): void {
   useEffect(() => {
     const syncDirty = (): void => {
-      window.api.setDirty(isDirty(useAppStore.getState(), useEditStore.getState()))
+      window.api.setDirty(anyDocumentDirty())
     }
     syncDirty()
     const unsubApp = useAppStore.subscribe(syncDirty)
@@ -43,7 +43,7 @@ function useUnsavedCloseGuard(): void {
 
   useEffect(() => {
     return window.api.onCloseRequested(() => {
-      void confirmUnsaved().then((ok) => {
+      void confirmEveryUnsaved().then((ok) => {
         if (ok) window.api.confirmClose()
       })
     })
@@ -53,6 +53,7 @@ function useUnsavedCloseGuard(): void {
 export default function App(): JSX.Element {
   const { t } = useTranslation()
   const doc = useAppStore((s) => s.document)
+  const activeDocumentId = useAppStore((s) => s.activeDocumentId)
   const loading = useAppStore((s) => s.loading)
 
   useShortcuts()
@@ -66,12 +67,13 @@ export default function App(): JSX.Element {
   return (
     <div className="flex h-full flex-col">
       <TitleBar />
+      <DocumentTabs />
       <Ribbon />
       <PropertiesBar />
       <div className="flex min-h-0 flex-1">
         <Sidebar />
         <main className="relative min-w-0 flex-1">
-          {doc ? <PdfViewer key={doc.pdf.fingerprints[0] ?? doc.name} doc={doc} /> : <EmptyState />}
+          {doc ? <PdfViewer key={activeDocumentId ?? doc.name} doc={doc} /> : <EmptyState />}
           {loading && (
             <div className="absolute inset-0 z-40 flex items-center justify-center bg-workspace/70">
               <div className="flex items-center gap-2 rounded-md bg-white px-4 py-3 shadow">

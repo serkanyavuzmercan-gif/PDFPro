@@ -84,7 +84,7 @@ export async function drawSignature(): Promise<void> {
   const signature = await openDialog({ type: 'signature' })
   if (!signature) return
   placeImage(
-    { bytes: signature.bytes, src: signature.src, format: 'png', signature: true },
+    { bytes: signature.bytes, src: signature.src, format: signature.format, signature: true },
     { width: signature.width * PX_TO_PT, height: signature.height * PX_TO_PT },
     180
   )

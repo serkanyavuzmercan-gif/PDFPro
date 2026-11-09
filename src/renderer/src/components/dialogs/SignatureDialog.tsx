@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState, type PointerEvent as ReactPointerEvent } from 'react'
 import { useTranslation } from 'react-i18next'
+import { reportFailure } from '../../services/fileService'
 import { DialogButton, Modal } from './Modal'
 import { closeDialog, type SignatureResult } from './dialogStore'
 
@@ -63,15 +64,40 @@ function toResult(canvas: HTMLCanvasElement): SignatureResult {
   return {
     src,
     bytes: dataUrlToBytes(src),
+    format: 'png',
     width: canvas.width / PIXEL_RATIO,
     height: canvas.height / PIXEL_RATIO
   }
+}
+
+function remember(result: SignatureResult): void {
+  try {
+    localStorage.setItem(
+      STORAGE_KEY,
+      JSON.stringify({ src: result.src, format: result.format, width: result.width, height: result.height })
+    )
+  } catch {
+    // Storage full; the signature is still placed.
+  }
+}
+
+function bytesToDataUrl(bytes: Uint8Array, format: 'png' | 'jpg'): Promise<string> {
+  const blob = new Blob([bytes.slice()], { type: format === 'png' ? 'image/png' : 'image/jpeg' })
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader()
+    reader.onload = () => resolve(String(reader.result))
+    reader.onerror = () => reject(reader.error)
+    reader.readAsDataURL(blob)
+  })
 }
 
 export function SignatureDialog(): JSX.Element {
   const { t } = useTranslation()
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const lastPoint = useRef<{ x: number; y: number } | null>(null)
+  /** Original file, used when the canvas was not drawn on after the upload. */
+  const uploaded = useRef<SignatureResult | null>(null)
+  const drawnOver = useRef(false)
   const [color, setColor] = useState(COLORS[0])
   const [width, setWidth] = useState(2.5)
   const [empty, setEmpty] = useState(true)
@@ -109,34 +135,85 @@ export function SignatureDialog(): JSX.Element {
       ctx.stroke()
     }
     lastPoint.current = point
+    drawnOver.current = true
     setEmpty(false)
   }
 
   const clear = (): void => {
     const ctx = canvasRef.current?.getContext('2d')
     ctx?.clearRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT)
+    uploaded.current = null
+    drawnOver.current = false
     setEmpty(true)
   }
 
-  const accept = (): void => {
-    const canvas = canvasRef.current
-    const trimmed = canvas && trimCanvas(canvas)
-    if (!trimmed) return
-    const result = toResult(trimmed)
-    try {
-      localStorage.setItem(STORAGE_KEY, result.src)
-    } catch {
-      // Storage full; the signature is still placed.
+  const upload = async (): Promise<void> => {
+    const result = await window.api.openImage()
+    if (!result.ok) {
+      reportFailure(result)
+      return
     }
+    const canvas = canvasRef.current
+    const ctx = canvas?.getContext('2d')
+    if (!canvas || !ctx) return
+    try {
+      const { data, format } = result.value
+      const src = await bytesToDataUrl(data, format)
+      const img = await loadImage(src)
+      ctx.setTransform(1, 0, 0, 1, 0, 0)
+      ctx.clearRect(0, 0, canvas.width, canvas.height)
+      ctx.setTransform(PIXEL_RATIO, 0, 0, PIXEL_RATIO, 0, 0)
+      const scale = Math.min(CANVAS_WIDTH / img.naturalWidth, CANVAS_HEIGHT / img.naturalHeight)
+      const w = img.naturalWidth * scale
+      const h = img.naturalHeight * scale
+      ctx.drawImage(img, (CANVAS_WIDTH - w) / 2, (CANVAS_HEIGHT - h) / 2, w, h)
+      uploaded.current = {
+        src,
+        bytes: data,
+        format,
+        width: img.naturalWidth,
+        height: img.naturalHeight
+      }
+      drawnOver.current = false
+      setEmpty(false)
+    } catch (err) {
+      console.error(err)
+      uploaded.current = null
+      setEmpty(true)
+    }
+  }
+
+  const accept = (): void => {
+    const original = uploaded.current
+    const result =
+      original && !drawnOver.current
+        ? original
+        : (() => {
+            const canvas = canvasRef.current
+            const trimmed = canvas && trimCanvas(canvas)
+            return trimmed ? toResult(trimmed) : null
+          })()
+    if (!result) return
+    remember(result)
     closeDialog(result)
   }
 
   const applySaved = async (): Promise<void> => {
     if (!saved) return
+    if (saved.startsWith('{')) {
+      try {
+        const stored = JSON.parse(saved) as Pick<SignatureResult, 'src' | 'format' | 'width' | 'height'>
+        closeDialog({ ...stored, bytes: dataUrlToBytes(stored.src) })
+      } catch (err) {
+        console.error(err)
+      }
+      return
+    }
     const img = await loadImage(saved)
     closeDialog({
       src: saved,
       bytes: dataUrlToBytes(saved),
+      format: 'png',
       width: img.naturalWidth / PIXEL_RATIO,
       height: img.naturalHeight / PIXEL_RATIO
     } satisfies SignatureResult)
@@ -187,16 +264,21 @@ export function SignatureDialog(): JSX.Element {
             />
           </label>
           <span className="flex-1" />
+          <button type="button" onClick={() => void upload()} className="rounded px-2 py-1 text-brand hover:bg-brand-soft">
+            {t('dialogs.signature.upload')}
+          </button>
           <button type="button" onClick={clear} className="rounded px-2 py-1 text-brand hover:bg-brand-soft">
             {t('dialogs.signature.clear')}
           </button>
         </div>
+        <div className="relative overflow-hidden rounded border border-dashed border-chrome-border bg-[linear-gradient(45deg,#f3f4f6_25%,transparent_25%),linear-gradient(-45deg,#f3f4f6_25%,transparent_25%),linear-gradient(45deg,transparent_75%,#f3f4f6_75%),linear-gradient(-45deg,transparent_75%,#f3f4f6_75%)] bg-[length:16px_16px] bg-[position:0_0,0_8px,8px_-8px,-8px_0] bg-white">
+          <div className="pointer-events-none absolute inset-x-0 bottom-10 h-px bg-chrome-border" />
         <canvas
           ref={canvasRef}
           width={CANVAS_WIDTH * PIXEL_RATIO}
           height={CANVAS_HEIGHT * PIXEL_RATIO}
           style={{ width: CANVAS_WIDTH, height: CANVAS_HEIGHT, touchAction: 'none' }}
-          className="cursor-crosshair rounded border border-dashed border-chrome-border bg-[linear-gradient(transparent_calc(100%-40px),#d9dadf_calc(100%-40px),#d9dadf_calc(100%-39px),transparent_calc(100%-39px))]"
+          className="relative cursor-crosshair bg-transparent"
           onPointerDown={(e) => {
             e.currentTarget.setPointerCapture(e.pointerId)
             const p = pointFor(e)
@@ -210,6 +292,7 @@ export function SignatureDialog(): JSX.Element {
             lastPoint.current = null
           }}
         />
+        </div>
         <span className="text-ink-muted">{t('dialogs.signature.hint')}</span>
       </div>
     </Modal>

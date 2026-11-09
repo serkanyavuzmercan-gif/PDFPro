@@ -21,6 +21,8 @@ const api: PdfProApi = {
     ipcRenderer.invoke(IpcChannels.fileWriteInDir, dir, fileName, data),
   getPrinters: () => ipcRenderer.invoke(IpcChannels.appGetPrinters),
   print: (request) => ipcRenderer.invoke(IpcChannels.appPrint, request),
+  listSystemFonts: () => ipcRenderer.invoke(IpcChannels.fontsList),
+  readSystemFont: (id, variant) => ipcRenderer.invoke(IpcChannels.fontsRead, id, variant),
   getPendingFile: () => ipcRenderer.invoke(IpcChannels.appGetPendingFile),
   setDirty: (dirty) => ipcRenderer.send(IpcChannels.appSetDirty, dirty),
   confirmClose: () => ipcRenderer.send(IpcChannels.appConfirmClose),

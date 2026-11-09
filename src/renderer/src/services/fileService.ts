@@ -5,6 +5,7 @@ import { exportEdits } from '../editing/exportEdits'
 import { isDirty, markSaved } from '../editing/history'
 import { useAppStore } from '../store/useAppStore'
 import { useEditStore } from '../store/useEditStore'
+import { closeTab, openInTab } from './documentTabs'
 import { loadPdf, PdfLoadError } from './pdfService'
 import { mountPrintRoot, renderPrintPages } from './printService'
 
@@ -32,14 +33,13 @@ export async function exportCurrent(): Promise<Uint8Array | null> {
   return exportEdits(doc.bytes, edit().objects, doc.pageSizes)
 }
 
-/** Shows a document (new or reopened) and starts a fresh edit history. */
+/** Shows a document in its own tab and starts a fresh edit history. */
 export async function showDocument(
   file: { path: string | null; name: string; data: Uint8Array },
   options: { unsaved?: boolean } = {}
 ): Promise<void> {
   const { pdf, pageSizes } = await loadPdf(file.data)
-  store().setDocument({ path: file.path, name: file.name, bytes: file.data, pdf, pageSizes })
-  edit().reset(options.unsaved ? null : file.data)
+  await openInTab(file, { pdf, pageSizes }, options.unsaved ? null : file.data)
 }
 
 async function loadOpenedFile(result: Result<OpenedFile>): Promise<void> {
@@ -73,12 +73,10 @@ export async function confirmUnsaved(): Promise<boolean> {
 }
 
 export async function openFromDialog(): Promise<void> {
-  if (!(await confirmUnsaved())) return
   await loadOpenedFile(await window.api.openFile())
 }
 
 export async function openFromPath(path: string): Promise<void> {
-  if (!(await confirmUnsaved())) return
   await loadOpenedFile(await window.api.readFile(path))
 }
 
@@ -161,8 +159,8 @@ export async function print(): Promise<void> {
   }
 }
 
-export async function closeDocument(): Promise<void> {
-  if (!(await confirmUnsaved())) return
-  store().setDocument(null)
-  edit().reset(null)
+export async function closeDocument(id?: string): Promise<void> {
+  await closeTab(id)
 }
+
+export { confirmEveryUnsaved, anyDocumentDirty } from './documentTabs'

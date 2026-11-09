@@ -1,6 +1,6 @@
 import { useAppStore, type PageSize, type ToolId } from '../store/useAppStore'
 import { useEditStore } from '../store/useEditStore'
-import { commitDraft } from './draft'
+import { commitDraft, nextDraftToken } from './draft'
 import { measureText } from './fonts'
 import { boundsOfPoints, clientToPage, rgbToHex } from './geometry'
 import { changeObjects } from './history'
@@ -89,7 +89,8 @@ export function markupFromSelection(type: MarkupType): boolean {
     type,
     rects: mergeLineRects(rects),
     color: style.color,
-    opacity: style.opacity
+    opacity: style.opacity,
+    strokeWidth: type === 'highlight' ? undefined : style.width
   }))
   changeObjects((objects) => [...objects, ...created])
   selection.removeAllRanges()
@@ -150,9 +151,30 @@ function inkInside(canvas: HTMLCanvasElement, r: DOMRect): string {
 }
 
 function fontFromCss(fontFamily: string): FontFamily {
-  const f = fontFamily.toLowerCase()
-  if (f.includes('mono') || f.includes('courier')) return 'mono'
-  if (f.includes('serif') && !f.includes('sans')) return 'serif'
+  const name = fontFamily.toLowerCase()
+  const match: [string, FontFamily][] = [
+    ['dejavu sans mono', 'mono'],
+    ['dejavu serif', 'serif'],
+    ['dejavu sans', 'sans'],
+    ['courier', 'courier'],
+    ['consolas', 'consolas'],
+    ['calibri', 'calibri'],
+    ['times', 'times'],
+    ['georgia', 'georgia'],
+    ['verdana', 'verdana'],
+    ['trebuchet', 'trebuchet'],
+    ['segoe', 'segoe'],
+    ['palatino', 'palatino'],
+    ['candara', 'candara'],
+    ['constantia', 'constantia'],
+    ['corbel', 'corbel'],
+    ['arial', 'arial']
+  ]
+  for (const [needle, family] of match) {
+    if (name.includes(needle)) return family
+  }
+  if (name.includes('mono')) return 'mono'
+  if (name.includes('serif') && !name.includes('sans')) return 'serif'
   return 'sans'
 }
 
@@ -201,6 +223,7 @@ export function editPageText(span: HTMLElement, pageIndex: number): void {
       width: rect.width + 2,
       height: rect.height + 2,
       color: canvas ? backgroundAround(canvas, clientRect) : '#ffffff'
-    }
+    },
+    token: nextDraftToken()
   })
 }

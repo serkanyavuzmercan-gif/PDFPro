@@ -2,7 +2,7 @@ import { useTranslation } from 'react-i18next'
 import logo from '../../assets/logo.png'
 import { DialogButton, Modal } from './Modal'
 
-const VERSION = '0.3.0'
+const VERSION = '0.4.0'
 const YEAR = 2026
 
 export function AboutDialog({ onClose }: { onClose: () => void }): JSX.Element {

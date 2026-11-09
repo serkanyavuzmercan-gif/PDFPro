@@ -14,6 +14,12 @@ import {
 
 const edit = useEditStore.getState
 
+let draftToken = 0
+export function nextDraftToken(): number {
+  draftToken += 1
+  return draftToken
+}
+
 export const DEFAULT_TEXT_WIDTH = 220
 
 /** Text boxes stay upright on screen even on rotated pages. */
@@ -50,7 +56,8 @@ export function startNewDraft(kind: TextDraft['kind'], pageIndex: number, anchor
     text: '',
     style: { ...settings.text },
     fill: settings.comment.fill,
-    border: settings.comment.border
+    border: settings.comment.border,
+    token: nextDraftToken()
   })
 }
 
@@ -69,7 +76,8 @@ export function startObjectDraft(obj: TextLikeObject): void {
     style: { ...obj.style },
     fill: obj.kind === 'comment' ? obj.fill : edit().settings.comment.fill,
     border: obj.kind === 'comment' ? obj.border : edit().settings.comment.border,
-    cover: obj.kind === 'text' ? obj.cover : undefined
+    cover: obj.kind === 'text' ? obj.cover : undefined,
+    token: nextDraftToken()
   })
 }
 

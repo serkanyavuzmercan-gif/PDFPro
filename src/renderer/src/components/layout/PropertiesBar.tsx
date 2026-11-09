@@ -1,16 +1,12 @@
 import { AlignCenter, AlignLeft, AlignRight, Bold, Italic } from 'lucide-react'
 import type { ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
-import { replaceObject } from '../../editing/history'
 import type { FontFamily, MarkupType, TextAlign, TextStyle } from '../../editing/types'
+import { fontChoices, fontLabel, useFontsVersion } from '../../editing/fonts'
+import { replaceObject } from '../../editing/history'
 import { useAppStore, type ToolId } from '../../store/useAppStore'
 import { useEditStore } from '../../store/useEditStore'
 
-const FONTS: { id: FontFamily; labelKey: string }[] = [
-  { id: 'sans', labelKey: 'properties.sans' },
-  { id: 'serif', labelKey: 'properties.serif' },
-  { id: 'mono', labelKey: 'properties.mono' }
-]
 const SIZES = [8, 9, 10, 11, 12, 14, 16, 18, 20, 24, 28, 36, 48, 72]
 const MARKUP_TOOLS: Partial<Record<ToolId, MarkupType>> = {
   underline: 'underline',
@@ -72,6 +68,7 @@ export function PropertiesBar(): JSX.Element | null {
   const selectedId = useEditStore((s) => s.selectedId)
   const objects = useEditStore((s) => s.objects)
   const settings = useEditStore((s) => s.settings)
+  useFontsVersion()
   const selected = objects.find((o) => o.id === selectedId) ?? null
 
   if (!hasDoc) return null
@@ -142,11 +139,14 @@ export function PropertiesBar(): JSX.Element | null {
             aria-label={t('properties.font')}
             value={textStyle.font}
             onChange={(e) => applyTextStyle({ font: e.target.value as FontFamily })}
-            className="h-6 rounded border border-chrome-border bg-white px-1 text-[11px] outline-none"
+            className="h-6 max-w-40 rounded border border-chrome-border bg-white px-1 text-[11px] outline-none"
           >
-            {FONTS.map((f) => (
-              <option key={f.id} value={f.id}>
-                {t(f.labelKey)}
+            {!fontChoices().some((font) => font.id === textStyle.font) && (
+              <option value={textStyle.font}>{fontLabel(textStyle.font)}</option>
+            )}
+            {fontChoices().map((font) => (
+              <option key={font.id} value={font.id}>
+                {font.label}
               </option>
             ))}
           </select>
@@ -245,6 +245,39 @@ export function PropertiesBar(): JSX.Element | null {
               className="w-20 accent-brand"
             />
           </label>
+          {(markupType === 'underline' || markupType === 'strikeout') && (
+            <label className="flex items-center gap-1 text-[11px] text-ink-muted">
+              {t('properties.width')}
+              <input
+                type="range"
+                min={0.5}
+                max={6}
+                step={0.25}
+                value={
+                  selected?.kind === 'markup' && selected.strokeWidth !== undefined
+                    ? selected.strokeWidth
+                    : settings.markup[markupType].width
+                }
+                onChange={(e) => {
+                  const width = Number(e.target.value)
+                  if (selected?.kind === 'markup') {
+                    replaceObject({ ...selected, strokeWidth: width }, `style-${selected.id}`)
+                  }
+                  patchSettings((s) => ({
+                    ...s,
+                    markup: { ...s.markup, [markupType]: { ...s.markup[markupType], width } }
+                  }))
+                }}
+                className="w-24 accent-brand"
+              />
+              <span className="w-8 tabular-nums text-ink">
+                {(selected?.kind === 'markup' && selected.strokeWidth !== undefined
+                  ? selected.strokeWidth
+                  : settings.markup[markupType].width
+                ).toFixed(2)}
+              </span>
+            </label>
+          )}
         </>
       )}
 

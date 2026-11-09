@@ -111,6 +111,7 @@
     "fill": "Fill",
     "border": "Border",
     "width": "Width",
+    "move": "Move",
     "opacity": "Opacity",
     "note": "Note",
     "notePlaceholder": "Type a note..."
@@ -158,8 +159,9 @@
       "title": "Draw signature",
       "place": "Place",
       "clear": "Clear",
+      "upload": "Upload image",
       "useLast": "Use last signature",
-      "hint": "Draw your signature with the mouse or a pen."
+      "hint": "Draw with the mouse or a pen, or upload an image. A transparent PNG stays transparent on the document."
     }
   },
   "sidebar": {

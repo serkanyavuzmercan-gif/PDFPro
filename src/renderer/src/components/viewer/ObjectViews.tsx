@@ -1,6 +1,7 @@
 import type { CSSProperties } from 'react'
 import { StickyNote } from 'lucide-react'
 import { cssFontFamily, layoutLines, lineHeight } from '../../editing/fonts'
+import { markupLineWidth } from '../../editing/layout'
 import {
   COMMENT_PADDING,
   NOTE_SIZE,
@@ -77,7 +78,14 @@ export function MarkupShape({ obj }: { obj: MarkupObject }): JSX.Element {
       {obj.rects.map((r, i) => {
         const y = r.y + r.height * (obj.type === 'underline' ? 0.92 : 0.55)
         return (
-          <line key={i} x1={r.x} x2={r.x + r.width} y1={y} y2={y} strokeWidth={Math.max(0.75, r.height * 0.07)} />
+          <line
+            key={i}
+            x1={r.x}
+            x2={r.x + r.width}
+            y1={y}
+            y2={y}
+            strokeWidth={markupLineWidth(obj.strokeWidth, r.height)}
+          />
         )
       })}
     </g>

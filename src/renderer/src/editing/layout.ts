@@ -32,3 +32,8 @@ export function objectBox(obj: EditObject): Rect & { rotation: number } {
     }
   }
 }
+
+/** Underline and strikeout thickness. Marks saved before the control existed keep the old size. */
+export function markupLineWidth(strokeWidth: number | undefined, rectHeight: number): number {
+  return strokeWidth ?? Math.max(0.75, rectHeight * 0.07)
+}

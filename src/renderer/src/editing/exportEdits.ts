@@ -15,6 +15,7 @@ import {
 } from 'pdf-lib'
 import type { PageSize } from '../store/useAppStore'
 import { getFontBytes, layoutLines, lineHeight } from './fonts'
+import { markupLineWidth } from './layout'
 import { hexToRgb } from './geometry'
 import {
   COMMENT_PADDING,
@@ -162,7 +163,7 @@ function drawMarkup(page: PDFPage, info: PageSize, obj: MarkupObject): void {
     page.drawLine({
       start: toUser(info, r.x, lineY),
       end: toUser(info, r.x + r.width, lineY),
-      thickness: Math.max(0.75, r.height * 0.07),
+      thickness: markupLineWidth(obj.strokeWidth, r.height),
       color: c,
       opacity: obj.opacity
     })

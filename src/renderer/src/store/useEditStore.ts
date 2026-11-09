@@ -23,6 +23,8 @@ export interface TextDraft {
   cover?: Rect & { color: string }
   /** For "edit existing text": unchanged text is discarded instead of committed. */
   originalText?: string
+  /** Changes only when a new box is opened, not when that box is moved. */
+  token: number
 }
 
 export interface ToolSettings {
@@ -30,8 +32,8 @@ export interface ToolSettings {
   comment: { fill: string; border: string }
   markup: {
     highlight: { color: string; opacity: number; width: number }
-    underline: { color: string; opacity: number }
-    strikeout: { color: string; opacity: number }
+    underline: { color: string; opacity: number; width: number }
+    strikeout: { color: string; opacity: number; width: number }
   }
   ink: { color: string; width: number; opacity: number }
   note: { color: string }
@@ -46,11 +48,22 @@ const defaultSettings: ToolSettings = {
   comment: { fill: '#fff8c5', border: '#d4a72c' },
   markup: {
     highlight: { color: '#ffd400', opacity: 0.55, width: 18 },
-    underline: { color: '#2563eb', opacity: 1 },
-    strikeout: { color: '#d71920', opacity: 1 }
+    underline: { color: '#2563eb', opacity: 1, width: 1.25 },
+    strikeout: { color: '#d71920', opacity: 1, width: 1.25 }
   },
   ink: { color: '#d71920', width: 2, opacity: 1 },
   note: { color: '#f5c518' }
+}
+
+export interface EditSession {
+  objects: EditObject[]
+  selectedId: string | null
+  draft: TextDraft | null
+  openNoteId: string | null
+  past: Snapshot[]
+  future: Snapshot[]
+  lastCoalesce: { key: string; time: number } | null
+  saved: Snapshot
 }
 
 export interface EditState {
@@ -76,6 +89,20 @@ export interface EditState {
   updateSettings: (fn: (s: ToolSettings) => ToolSettings) => void
   reset: (bytes: Uint8Array | null) => void
   markSaved: (snapshot: Snapshot) => void
+  restoreSession: (session: EditSession) => void
+}
+
+export function captureEditSession(state: EditState = useEditStore.getState()): EditSession {
+  return {
+    objects: state.objects,
+    selectedId: state.selectedId,
+    draft: state.draft,
+    openNoteId: state.openNoteId,
+    past: state.past,
+    future: state.future,
+    lastCoalesce: state.lastCoalesce,
+    saved: state.saved
+  }
 }
 
 export const useEditStore = create<EditState>((set, get) => ({
@@ -143,5 +170,6 @@ export const useEditStore = create<EditState>((set, get) => ({
       lastCoalesce: null,
       saved: { bytes, objects: EMPTY }
     }),
-  markSaved: (snapshot) => set({ saved: snapshot })
+  markSaved: (snapshot) => set({ saved: snapshot }),
+  restoreSession: (session) => set({ ...session })
 }))

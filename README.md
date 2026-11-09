@@ -6,12 +6,17 @@
 
 ## Kurulum
 
-Windows kurulumu GitHub sürümünden indirilir: [PDFPro-Setup-0.3.0.exe](https://github.com/serkanyavuzmercan-gif/PDFPro/releases/download/v0.3.0/PDFPro-Setup-0.3.0.exe)
+Windows kurulumu GitHub sürümünden indirilir: [PDFPro-Setup-0.4.0.exe](https://github.com/serkanyavuzmercan-gif/PDFPro/releases/download/v0.4.0/PDFPro-Setup-0.4.0.exe)
 
 Kurulum sihirbazı kurulum klasörünü seçmenize izin verir ve masaüstü kısayolu oluşturur. `.pdf` dosyaları PDFPro ile açılır.
 
 ## Bu sürümde
 
+- Açık bir PDF dururken başka bir dosya yeni sekmede açılır; her sekmede dosya adı ve kapatma işareti vardır.
+- Metin aracında Windows’taki Arial, Times New Roman ve benzeri yüklü yazı tipleri kullanılabilir.
+- Yazı yazarken imleç yanıp sönüyorsa kutu taşınabilir.
+- Altını çiz ve üstünü çiz araçlarında çizgi kalınlığı seçilir.
+- İmza penceresinden resim yüklenebilir; saydam arka planlı PNG belgede saydam kalır.
 - Vurgula aracı fosforlu kalem gibi serbest çizim yapar; uç kalınlığı ayarlanır.
 - Yazdırma önizlemesi uygulama içinde açılır.
 - Logoya tıklayınca Hakkında penceresi açılır.
